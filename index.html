@@ -785,11 +785,20 @@ ${tr}
 
 /* ---------- 下載與成績單 ---------- */
 let dl=null;
+const isIOS = () => /iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
 async function saveFile(filename, data, type){
   if(dl){ try{ await dl.save({filename, data}); toast('已下載'); return; } catch(e){ if(e && (e.code==='declined')) return; if(e && e.code==='rate_limited'){ toast('請稍候再試'); return; } } }
   const blob = data instanceof Blob ? data : new Blob([data], {type: type||'text/plain'});
+  // iPhone：用分享選單，影片可直接「儲存影片」到照片
+  if(isIOS() && navigator.canShare){
+    try{
+      const file = new File([blob], filename, {type: (blob.type||'').split(';')[0] || 'application/octet-stream'});
+      if(navigator.canShare({files:[file]})){ await navigator.share({files:[file]}); return; }
+    }catch(e){ if(e && e.name==='AbortError') return; }
+  }
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=filename; document.body.appendChild(a); a.click();
-  setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },1000);
+  // Safari 會先問「要下載嗎？」，網址太早釋放會變成「無法下載檔案」
+  setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },120000);
 }
 function stamp(s){ const d=new Date(s.created); return `${d.getMonth()+1}${String(d.getDate()).padStart(2,'0')}_${String(d.getHours()).padStart(2,'0')}${String(d.getMinutes()).padStart(2,'0')}`; }
 function report(s){
