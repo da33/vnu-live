@@ -34,11 +34,17 @@ main{max-width:1200px;margin:0 auto;padding:0 20px 40px;display:grid;grid-templa
 .stage{position:relative;aspect-ratio:9/16;width:100%;max-width:420px;margin:0 auto;background:#000;border-radius:22px;overflow:hidden;box-shadow:0 18px 50px -20px rgba(30,10,50,.55);color:#fff}
 .stage video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#000}
 .stage video.mirror{transform:scaleX(-1)}
+.stage canvas.fx{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;object-position:50% 0;background:#000}
+.lagov{position:absolute;inset:0;display:none;z-index:1}
+.lagov.show{display:block}
+.lagov canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#000}
+.lagov canvas.mirror{transform:scaleX(-1)}
+.lagov span{position:absolute;left:50%;top:34%;transform:translateX(-50%);background:rgba(0,0,0,.6);padding:7px 14px;border-radius:999px;font-weight:700;font-size:13px;white-space:nowrap}
 .empty{position:absolute;inset:0;display:grid;place-items:center;text-align:center;color:#d9d3e2;padding:24px;z-index:3}
 .empty p{margin:0 0 14px;font-size:.95rem}
 .ov{position:absolute;inset:0;pointer-events:none;text-shadow:0 1px 2px rgba(0,0,0,.45);font-size:14px;z-index:2}
 .ov button{pointer-events:auto;border:0;background:transparent;color:#fff;padding:0}
-.ovtop{position:absolute;top:calc(10px + var(--sat,0px));left:10px;right:10px;display:flex;align-items:center;gap:8px}
+.ovtop{position:absolute;top:calc(10px + var(--sat,0px) + var(--fb,0px));left:10px;right:10px;display:flex;align-items:center;gap:8px}
 .host{display:flex;align-items:center;gap:6px;background:rgba(0,0,0,.32);border-radius:999px;padding:3px 4px 3px 3px;min-width:0;max-width:60%}
 .av{width:32px;height:32px;border-radius:50%;flex:none;display:grid;place-items:center;font-weight:700;font-size:13px;text-shadow:none;border:1.5px solid rgba(255,255,255,.85)}
 .hn{display:flex;flex-direction:column;line-height:1.2;min-width:0}
@@ -51,11 +57,19 @@ main{max-width:1200px;margin:0 auto;padding:0 20px 40px;display:grid;grid-templa
 .vc{background:rgba(0,0,0,.32);border-radius:999px;padding:4px 9px;font-size:12px;font-weight:700;min-width:36px;text-align:center;font-variant-numeric:tabular-nums}
 .x{width:30px;height:30px;font-size:20px;line-height:30px;text-align:center;display:none}
 body.living .x{display:block}
-.tags{position:absolute;top:calc(50px + var(--sat,0px));left:10px;right:10px;display:flex;gap:6px;align-items:center}
+.tags{position:absolute;top:calc(50px + var(--sat,0px) + var(--fb,0px));left:10px;right:10px;display:flex;gap:6px;align-items:center}
 .pill{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:5px;font-size:12px;font-weight:700;background:rgba(0,0,0,.3);white-space:nowrap}
 .pill.live{background:var(--live);text-shadow:none}
 .pill.tt{overflow:hidden;text-overflow:ellipsis;font-weight:500;min-width:0}
-.pinned{position:absolute;top:calc(80px + var(--sat,0px));left:10px;right:10px;background:rgba(255,255,255,.95);color:#1d1d1f;text-shadow:none;border-radius:10px;padding:7px 11px;font-size:13px;display:none}
+.tops{position:absolute;top:calc(80px + var(--sat,0px) + var(--fb,0px));left:10px;right:10px;display:flex;flex-direction:column;gap:6px}
+.chal{display:none;position:relative;overflow:hidden;background:linear-gradient(135deg,rgba(124,58,237,.95),rgba(254,44,85,.95));border-radius:12px;padding:8px 12px 11px;text-shadow:none;box-shadow:0 6px 18px rgba(0,0,0,.25)}
+.chal.show{display:block;animation:pop .25s ease-out}
+.chal.ok{background:linear-gradient(135deg,rgba(22,163,106,.95),rgba(13,120,80,.95))}
+.chal.ng{background:rgba(55,50,65,.94)}
+.chal b{display:block;font-size:12px;letter-spacing:.04em;opacity:.95}
+.chal p{margin:3px 0 0;font-size:14px;font-weight:700;line-height:1.45;white-space:pre-line}
+.chal .cbar{position:absolute;left:0;bottom:0;height:3px;background:rgba(255,255,255,.9);transition:width 1s linear}
+.pinned{background:rgba(255,255,255,.95);color:#1d1d1f;text-shadow:none;border-radius:10px;padding:7px 11px;font-size:13px;display:none}
 .pinned b{display:block;font-size:11px;color:var(--live)}
 .pinned.show{display:block;animation:pop .25s ease-out}
 @keyframes pop{from{transform:scale(.94);opacity:0}}
@@ -75,6 +89,7 @@ body.living .x{display:block}
 .msg.sys{background:transparent;color:rgba(255,255,255,.8);padding-left:2px}
 .msg.sys .n{color:#9FE3FF}
 .msg.gf .n{color:#FFB3C3}
+.msg.troll{background:rgba(150,10,40,.78)}
 @keyframes slide{from{transform:translateY(6px);opacity:0}}
 .sub{position:absolute;left:12px;right:12px;top:52%;text-align:center;font-size:15px;font-weight:500}
 .sub span{background:rgba(0,0,0,.5);padding:2px 8px;border-radius:6px;box-decoration-break:clone;-webkit-box-decoration-break:clone}
@@ -129,6 +144,14 @@ textarea{min-height:70px;resize:vertical}
 .stat .v{font-size:1.4rem;font-weight:900;line-height:1.2;font-variant-numeric:tabular-nums}
 .stat .k{font-size:.8rem;color:var(--muted)}
 .stat.bad .v{color:var(--warn)}
+.score{display:grid;grid-template-columns:auto 1fr;gap:4px 16px;align-items:center;background:linear-gradient(135deg,#3B4CFF,#FE2C55);color:#fff;border-radius:16px;padding:16px 18px;margin-bottom:14px}
+.score .num{font-size:3.2rem;font-weight:900;line-height:1;font-variant-numeric:tabular-nums}
+.score .num small{font-size:1rem;font-weight:700;margin-left:2px}
+.score .gr{font-size:1.5rem;font-weight:900;line-height:1.2}
+.score .meta{font-size:.85rem;opacity:.9}
+.score .badges{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.badge{background:rgba(255,255,255,.2);border-radius:999px;padding:3px 10px;font-size:.85rem;font-weight:700}
+.badge.dim{font-weight:500}
 .sessions{display:flex;flex-direction:column;gap:8px}
 .sess{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--soft);text-align:left;width:100%}
 .sess[aria-current="true"]{border-color:var(--accent);box-shadow:inset 3px 0 0 var(--accent)}
@@ -138,6 +161,8 @@ textarea{min-height:70px;resize:vertical}
 .timeline .seg{position:absolute;top:0;bottom:0;background:color-mix(in srgb,var(--warn) 35%,transparent)}
 .timeline .mk{position:absolute;top:4px;bottom:4px;width:3px;margin-left:-1px;background:var(--accent);border-radius:2px}
 .timeline .qd{position:absolute;bottom:4px;width:7px;height:7px;margin-left:-3px;border-radius:50%;background:#FFB000}
+.timeline .ch{position:absolute;top:5px;width:9px;height:9px;margin-left:-4px;transform:rotate(45deg);background:#A855F7;border-radius:2px}
+.timeline .ch.ng{opacity:.4}
 .timeline .ph{position:absolute;top:0;bottom:0;width:2px;background:var(--ink)}
 .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:.8rem;color:var(--muted);margin-top:6px}
 .legend span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px;background:var(--c)}
@@ -179,6 +204,8 @@ textarea{min-height:70px;resize:vertical}
     <div class="stage" id="stage">
       <video id="cam" class="mirror" playsinline muted autoplay></video>
       <video id="player" class="hidden" playsinline></video>
+      <canvas id="fx" class="fx hidden"></canvas>
+      <div class="lagov" id="lag"><canvas></canvas><span>📶 連線不穩定，重新連線中…</span></div>
       <div class="empty" id="empty">
         <div>
           <p>先開啟鏡頭與麥克風，<br>就能看到自己在直播間裡的樣子。</p>
@@ -204,7 +231,10 @@ textarea{min-height:70px;resize:vertical}
           <span class="pill" id="pTime">00:00</span>
           <span class="pill tt" id="ovTitle"></span>
         </div>
-        <div class="pinned" id="pinned"><b>觀眾提問</b><span></span></div>
+        <div class="tops">
+          <div class="chal" id="chal"></div>
+          <div class="pinned" id="pinned"><b>觀眾提問</b><span></span></div>
+        </div>
         <div class="sub" id="sub"></div>
         <div class="gift" id="gift"></div>
         <div class="chat" id="chat"></div>
@@ -230,7 +260,7 @@ textarea{min-height:70px;resize:vertical}
       <div class="controls">
         <button class="btn live big" id="btnStart" disabled>開始直播</button>
       </div>
-      <p class="hint">開始後會倒數 3 秒並全螢幕開播，同時錄影。直播中點 🔖 標記重點，點右上角 ✕ 結束。電腦上可按 M 標記、Esc 結束。</p>
+      <p class="hint">開始後會倒數 3 秒並全螢幕開播，同時錄影。直播中點 🔖 標記重點，點右上角 ✕ 結束。電腦上可按 M 標記、Esc 結束。開啟「突發挑戰」時會隨機跳出任務卡，限時完成可以加分。</p>
       <p class="hint hidden" id="speechNote"></p>
     </div>
 
@@ -240,6 +270,32 @@ textarea{min-height:70px;resize:vertical}
         <div class="field"><label for="host">主播名稱（可填姓名或學號）</label><input type="text" id="host" value="Rino老師" maxlength="16"></div>
         <div class="field"><label for="title">直播標題</label><input type="text" id="title" value="時尚表藝系 線上說明會" maxlength="30"></div>
       </div>
+      <div class="row">
+        <div class="field">
+          <label for="fxFilter">濾鏡（錄影也會套用）</label>
+          <select id="fxFilter">
+            <option value="none" selected>無</option>
+            <option value="beauty">自然美顏</option>
+            <option value="warm">暖陽</option>
+            <option value="cool">冷白透亮</option>
+            <option value="pink">粉嫩少女</option>
+            <option value="vintage">復古底片</option>
+            <option value="mono">黑白電影</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="fxFrame">直播外框</label>
+          <select id="fxFrame">
+            <option value="none" selected>無</option>
+            <option value="dept">系上招牌</option>
+            <option value="neon">霓虹燈</option>
+            <option value="film">底片框</option>
+            <option value="sparkle">閃亮亮</option>
+          </select>
+        </div>
+      </div>
+      <div class="field hidden" id="fxTextBox" style="margin-top:10px"><label for="fxText">招牌文字</label><input type="text" id="fxText" value="萬能科大｜時尚造型設計暨表演藝術系" maxlength="22"></div>
+      <p class="hint hidden" id="fxNote">這個瀏覽器不支援濾鏡錄影，濾鏡與外框已關閉。</p>
       <div class="row">
         <div class="field">
           <label for="scene">練習情境</label>
@@ -286,6 +342,10 @@ textarea{min-height:70px;resize:vertical}
           <label for="optSpeechSel">即時字幕與贅字偵測</label>
           <select id="optSpeechSel"><option value="on" selected>開啟</option><option value="off">關閉</option></select>
         </div>
+        <div class="field">
+          <label for="chalSel">突發挑戰</label>
+          <select id="chalSel"><option value="0">關閉</option><option value="1" selected>偶爾（約 1.5 分鐘一次）</option><option value="2">頻繁（約 45 秒一次）</option></select>
+        </div>
       </div>
       <div class="field" style="margin-top:10px">
         <label for="customQ">自訂觀眾提問（一行一題，會穿插出現）</label>
@@ -311,6 +371,7 @@ textarea{min-height:70px;resize:vertical}
     </div>
     <div class="card hidden" id="detail">
       <h2 id="dTitle"></h2>
+      <div class="score" id="dScore"></div>
       <div class="row">
         <label class="check"><input type="checkbox" id="optReplayOv" checked> 重播留言與數據</label>
         <div class="field" style="flex:0 0 130px">
@@ -323,6 +384,7 @@ textarea{min-height:70px;resize:vertical}
         <span style="--c:var(--accent)">標記</span>
         <span style="--c:color-mix(in srgb,var(--warn) 50%,transparent)">冷場</span>
         <span style="--c:#FFB000">觀眾提問</span>
+        <span style="--c:#A855F7">突發挑戰</span>
       </div>
       <h3>成績</h3>
       <div class="livestats" id="dStats"></div>
@@ -420,7 +482,7 @@ async function openCam(){
     const cam = $('#cam'); cam.srcObject = S.stream; await cam.play().catch(()=>{});
     $('#empty').classList.add('hidden');
     $('#btnStart').disabled = false;
-    setupAudio(); await listDevices();
+    setupAudio(); await listDevices(); fxSync();
   }catch(e){
     err.textContent = (e && e.name==='NotAllowedError')
       ? '鏡頭或麥克風被拒絕存取。請在瀏覽器允許權限；在 Claude 內打不開的話，到「錄影回放」下載離線版。'
@@ -464,6 +526,7 @@ function meterTick(){
     }else if(t - S.lastVoice > 4 && S.silenceStart===null){
       S.silenceStart = S.lastVoice; $('#warn').classList.add('show');
     }
+    if(S.chal && S.chal.check==='move'){ const pt = performance.now(); if(pt - MO.last > 200){ MO.last = pt; if(motion()) S.chal.got += 0.2; } }
   }
   requestAnimationFrame(meterTick);
 }
@@ -471,7 +534,7 @@ function meterTick(){
 /* ---------- 留言、禮物、愛心 ---------- */
 function addMsg(container, m){
   const el = document.createElement('div');
-  el.className = 'msg' + ({q:' q', sys:' sys', gift:' gf'}[m.kind]||'');
+  el.className = 'msg' + ({q:' q', sys:' sys', gift:' gf', troll:' troll'}[m.kind]||'');
   const n = document.createElement('span'); n.className='n'; n.textContent = m.name;
   el.appendChild(n); el.appendChild(document.createTextNode(m.text));
   container.appendChild(el);
@@ -533,7 +596,8 @@ function tick(){
     S.viewers = N*ramp*(1 + (Math.random()-0.5)*0.04);
   }else{
     const silentFor = t - S.lastVoice;
-    const goal = silentFor > 4 ? Math.max(0.35, 1 - (silentFor-4)*0.07) : 1.1;
+    let goal = silentFor > 4 ? Math.max(0.35, 1 - (silentFor-4)*0.07) : 1.1;
+    if(S.chal && S.chal.id==='drop') goal = Math.min(goal, 0.5);
     S.perf += (goal - S.perf)*0.1;
     S.viewers = N*ramp*S.perf*(1 + (Math.random()-0.5)*0.05);
   }
@@ -543,6 +607,7 @@ function tick(){
   S.series.push(v); S.likesSeries.push(S.likes);
   setViewersUI(v);
   if(Math.abs(t - target) < 0.6) toast('已達目標時長，可以準備收尾了');
+  chalTick(t);
 }
 
 /* ---------- 語音辨識 ---------- */
@@ -564,10 +629,177 @@ function onFinal(text){
   const t = now(); S.transcript.push({t, text});
   showSub(text); clearTimeout(onFinal.h); onFinal.h = setTimeout(()=>showSub(''), 2500);
   FILLERS.forEach(f => { const c = text.split(f).length-1; if(c) S.fillers[f]=(S.fillers[f]||0)+c; });
+  if(S.chal && S.chal.re && S.chal.re.test(text)) chalEnd(true, t);
   for(const [re, replies] of SCENES[S.scene].keys){ if(re.test(text)){ setTimeout(()=>{ if(S.live) emit(Math.random()<0.6?'q':'c', rnd(replies)); }, 1200+Math.random()*2000); break; } }
   if(/大家好|哈囉|歡迎/.test(text)) setTimeout(()=>{ if(S.live) emit('c', rnd(['主播好～','嗨嗨','來了！'])); }, 900);
   if(/按讚|愛心|點讚/.test(text)) for(let i=0;i<10;i++) setTimeout(heart, i*130);
   if(/追蹤|關注/.test(text)) setTimeout(()=>{ if(S.live){ S.follows++; emit('sys','追蹤了主播'); } }, 1500);
+}
+
+/* ---------- 突發挑戰 ---------- */
+const TROLLS = ['講這麼久到底重點是什麼？','好無聊喔，我要走了','是不是在念稿啊','畫質好爛','這個真的有用嗎？','主播是不是很緊張😂'];
+const CHALS = [
+  {id:'troll', icon:'😈', title:'酸民來了', dur:20, check:'voice', need:6, text:c=>`${c.who} 留言：「${c.say}」\n優雅地回應他，別被激怒！`},
+  {id:'lag', icon:'📶', title:'網路卡頓', dur:10, check:'voice', need:5, text:()=>'畫面卡住了！觀眾只聽得到聲音\n繼續說話安撫大家'},
+  {id:'drop', icon:'📉', title:'人數下滑', dur:20, check:'words', need:6, re:/讚|愛心|追蹤|關注|分享|留言|小鈴鐺/, text:()=>'觀眾正在離開！\n喊大家按讚、追蹤、留言把人留住'},
+  {id:'gift', icon:'👑', title:'大哥駕到', dur:15, check:'words', need:4, text:c=>`${c.who} 送出皇冠 ×99！\n叫出他的名字謝謝他`},
+  {id:'walk', icon:'🕺', title:'即興走秀', dur:15, check:'move', need:4, text:()=>'觀眾起鬨：來一段即興走秀\n或連擺 3 個姿勢！'},
+  {id:'item', icon:'👗', title:'單品介紹', dur:30, check:'voice', need:15, text:()=>'30 秒介紹身上一件單品\n顏色、材質、怎麼搭'}
+];
+const CHAL_SCENE = {
+  admissions:{id:'parent', icon:'🙋', title:'家長提問', dur:30, check:'voice', need:15, text:()=>'家長問：「讀這個系以後找得到工作嗎？」\n用 30 秒說服他'},
+  sales:{id:'bargain', icon:'💸', title:'觀眾殺價', dur:25, check:'voice', need:10, text:()=>'觀眾說：「網拍便宜一半耶！」\n說出值得買的理由'},
+  talent:{id:'encore', icon:'🎤', title:'觀眾點播', dur:15, check:'move', need:4, text:()=>'觀眾點播：馬上來 10 秒即興表演！'},
+  chat:{id:'comfort', icon:'🫂', title:'暖心時刻', dur:25, check:'voice', need:8, text:()=>'觀眾說：「今天心情好差…」\n用溫暖的話安慰他'}
+};
+function chalGap(first){ const m = +$('#chalSel').value; if(!m) return Infinity; return first ? (m===2?18:28) + Math.random()*10 : (m===2 ? 35 + Math.random()*20 : 70 + Math.random()*40); }
+function chalStart(t){
+  if(!S.bag || !S.bag.length) S.bag = CHALS.filter(c=>c.id!=='drop' || $('#vMode').value!=='fixed').concat([CHAL_SCENE[S.scene]]).sort(()=>Math.random()-0.5);
+  const d = S.bag.pop();
+  const c = {id:d.id, icon:d.icon, title:d.title, check:d.check, need:d.need, t, e:t+d.dur, got:0, ok:null, who:rnd(NAMES), say:rnd(TROLLS)};
+  c.text = d.text(c);
+  c.re = d.id==='gift' ? new RegExp(c.who+'|謝') : d.re;
+  S.chal = c; S.chals.push(c); MO.prev = null;
+  if(d.id==='troll') emit('troll', c.say, {name:c.who});
+  if(d.id==='gift') emit('gift', '送出 皇冠 ×99', {name:c.who, gift:'皇冠', icon:'👑', count:99});
+  if(d.id==='lag'){ freeze(true); setTimeout(()=>{ if(S.live) emit('c', rnd(LEAVE)); }, 1500); }
+  showChal(c, false, t);
+}
+function chalTick(t){
+  const c = S.chal;
+  if(!c){ if(t >= S.nextChal) chalStart(t); return; }
+  // 有字幕時要講到關鍵字（或講更久），沒字幕就看有沒有在講話
+  const strict = c.check==='words' && S.recOn && S.transcript.length>0;
+  if(c.check!=='move' && t - S.lastVoice < 1.1) c.got++;
+  if(c.got >= (strict ? c.need*2 : c.need)) chalEnd(true, t);
+  else if(t >= c.e) chalEnd(false, t);
+  else showChal(c, false, t);
+}
+function chalEnd(ok, t){
+  const c = S.chal; if(!c) return;
+  c.ok = ok; c.done = t; S.chal = null; S.nextChal = t + chalGap();
+  if(c.id==='lag'){ freeze(false); if(S.live) emit('sys', '連線恢復了', {name:'📢 系統'}); }
+  showChal(c, true, t);
+  clearTimeout(chalEnd.h); chalEnd.h = setTimeout(()=>{ if(!S.chal) showChal(null); }, 2500);
+  if(!S.live) return;
+  if(ok){ S.perf = Math.min(1.25, S.perf + 0.2); for(let i=0;i<8;i++) setTimeout(heart, i*120); setTimeout(()=>{ if(S.live) emit('c', rnd(['太強了吧👏','反應好快','主播好穩','這個好會','😂😂😂','愛了愛了'])); }, 600); }
+  else { S.perf = Math.max(0.3, S.perf - 0.1); setTimeout(()=>{ if(S.live) emit('c', rnd(['……','沒有回應耶','好吧','嗯？'])); }, 600); }
+}
+function showChal(c, resolved, t){
+  const el = $('#chal');
+  if(!c){ if(el.dataset.k){ el.className = 'chal'; el.dataset.k = ''; } return; }
+  const left = Math.max(0, c.e - t), k = c.t+'|'+(resolved ? c.ok : Math.ceil(left));
+  if(el.dataset.k === k) return; el.dataset.k = k;
+  el.className = 'chal show' + (resolved ? (c.ok ? ' ok' : ' ng') : '');
+  el.innerHTML = '<b></b><p></p><i class="cbar"></i>';
+  el.querySelector('b').textContent = resolved ? (c.ok ? '✓ 挑戰成功！' : '✗ 時間到，下次加油') : `${c.icon} 突發挑戰｜${c.title}　${Math.ceil(left)} 秒`;
+  el.querySelector('p').textContent = c.text;
+  el.querySelector('.cbar').style.width = resolved ? '0' : (left/(c.e-c.t)*100)+'%';
+}
+function freeze(on){ // 模擬網路卡頓：畫面停在這一格
+  const box = $('#lag'), cv = box.querySelector('canvas');
+  if(on){
+    const v = $('#cam'), src = FX.on ? FX.cv : v, w = FX.on ? FX.w : v.videoWidth, h = FX.on ? FX.h : v.videoHeight;
+    if(w && h){ cv.width = w; cv.height = h; cv.getContext('2d').drawImage(src, 0, 0, w, h); }
+    cv.className = FX.on ? 'fx' : ($('#optMirror').checked ? 'mirror' : '');
+  }
+  box.classList.toggle('show', on);
+}
+const MO = {c:null, g:null, prev:null, last:0};
+function motion(){ // 比對前後畫面，判斷有沒有在動
+  const v = $('#cam'); if(!v.videoWidth) return false;
+  if(!MO.c){ MO.c = document.createElement('canvas'); MO.c.width = 24; MO.c.height = 32; MO.g = MO.c.getContext('2d', {willReadFrequently:true}); }
+  MO.g.drawImage(v, 0, 0, 24, 32);
+  const d = MO.g.getImageData(0, 0, 24, 32).data, p = MO.prev; let diff = 0;
+  if(p) for(let i=0; i<d.length; i+=4) diff += Math.abs(d[i]+d[i+1]+d[i+2]-p[i]-p[i+1]-p[i+2]);
+  MO.prev = d;
+  return !!p && diff/(d.length/4)/3 > 7;
+}
+
+/* ---------- 濾鏡與外框（畫在畫布上，錄影也會有） ---------- */
+const FX = {on:false, cv:null, g:null, sm:null, sg:null, frame:null, vig:null, w:540, h:960, raf:0, last:0};
+const BAND = 0.055;
+const FILTERS = {
+  beauty:  [['soft',.35],['screen',.10,'#ffffff'],['soft-light',.20,'#ffb199']],
+  warm:    [['soft-light',.28,'#ff9a3c'],['screen',.06,'#ffd08a']],
+  cool:    [['soft-light',.20,'#3d9bff'],['soft-light',.10,'#ffb199'],['screen',.10,'#f2f7ff']],
+  pink:    [['soft',.25],['soft-light',.35,'#ff6fa8'],['screen',.10,'#ffe3f0']],
+  vintage: [['saturation',.5,'#808080'],['soft-light',.5,'#c8843e'],['lighten',1,'#2b2220'],['vignette',.55]],
+  mono:    [['saturation',1,'#808080'],['vignette',.5]]
+};
+const SPARKS = Array.from({length:14}, (_, i) => { const side = i%4, a = Math.random(), b = 0.03 + Math.random()*0.09;
+  return {x: side===0 ? b : side===1 ? 1-b : 0.05+a*0.9, y: side===2 ? b : side===3 ? 1-b : 0.05+a*0.9, r: 10+Math.random()*14, sp: 1.5+Math.random()*2, ph: Math.random()*6}; });
+const canFx = () => !!(window.MediaRecorder && HTMLCanvasElement.prototype.captureStream);
+const fxWanted = () => canFx() && ($('#fxFilter').value!=='none' || $('#fxFrame').value!=='none');
+function fxInit(){
+  FX.cv = $('#fx'); FX.cv.width = FX.w; FX.cv.height = FX.h; FX.g = FX.cv.getContext('2d');
+  FX.sm = document.createElement('canvas'); FX.sm.width = 90; FX.sm.height = 160; FX.sg = FX.sm.getContext('2d');
+  FX.frame = document.createElement('canvas'); FX.frame.width = FX.w; FX.frame.height = FX.h;
+  FX.vig = FX.g.createRadialGradient(FX.w/2, FX.h*0.45, FX.h*0.25, FX.w/2, FX.h*0.45, FX.h*0.75);
+  FX.vig.addColorStop(0, 'rgba(0,0,0,0)'); FX.vig.addColorStop(1, '#000');
+  if(!canFx()){ ['#fxFilter','#fxFrame'].forEach(s=>$(s).disabled = true); $('#fxNote').classList.remove('hidden'); }
+  fxFrame();
+}
+function fxSync(){
+  if(S.live) return;
+  $('#fxTextBox').classList.toggle('hidden', $('#fxFrame').value!=='dept');
+  fxFrame();
+  const want = !!S.stream && fxWanted();
+  if(want && !FX.on){ FX.on = true; FX.raf = requestAnimationFrame(fxDraw); }
+  if(!want && FX.on){ FX.on = false; cancelAnimationFrame(FX.raf); }
+  $('#fx').classList.toggle('hidden', !FX.on || !$('#player').classList.contains('hidden'));
+  fxLayout();
+}
+function fxLayout(){ // 有上方招牌時，把直播間上方資訊往下移
+  const st = $('#stage'), replay = !$('#player').classList.contains('hidden');
+  const dept = replay ? !!(cur && cur.frame==='dept') : (FX.on && $('#fxFrame').value==='dept');
+  if(!dept){ st.style.removeProperty('--fb'); return; }
+  st.style.setProperty('--fb', Math.round(Math.min(st.clientHeight, st.clientWidth*16/9)*BAND)+'px');
+}
+function rr(g, x, y, w, h, r){ g.beginPath(); g.moveTo(x+r, y); g.arcTo(x+w, y, x+w, y+h, r); g.arcTo(x+w, y+h, x, y+h, r); g.arcTo(x, y+h, x, y, r); g.arcTo(x, y, x+w, y, r); g.closePath(); }
+function fxFrame(){ // 外框的靜態部分先畫好，每一格直接貼上
+  if(!FX.frame) return;
+  const k = $('#fxFrame').value, g = FX.frame.getContext('2d'), w = FX.w, h = FX.h;
+  const font = (wt, px) => `${wt} ${px}px "Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif`;
+  g.clearRect(0, 0, w, h);
+  if(k==='dept'){
+    const bh = Math.round(h*BAND), gold = g.createLinearGradient(0, 0, w, 0);
+    gold.addColorStop(0, '#b8862b'); gold.addColorStop(.5, '#ffe29a'); gold.addColorStop(1, '#b8862b');
+    g.fillStyle = 'rgba(20,12,28,.8)'; g.fillRect(0, 0, w, bh);
+    g.fillStyle = gold; g.fillRect(0, bh, w, 3);
+    g.strokeStyle = gold; g.lineWidth = 4; rr(g, 10, bh+10, w-20, h-bh-20, 18); g.stroke();
+    g.font = font(900, Math.round(bh*0.46)); g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.fillText($('#fxText').value.trim() || '萬能科大', w/2, bh/2+1, w-40);
+  }else if(k==='neon'){
+    [['#ff2d95', 14], ['#22d3ee', 30]].forEach(([col, ins]) => { g.save(); g.shadowColor = col; g.shadowBlur = 24; g.strokeStyle = col; g.lineWidth = 5; rr(g, ins, ins, w-ins*2, h-ins*2, 28); g.stroke(); g.stroke(); g.restore(); });
+  }else if(k==='film'){
+    const bw = Math.round(w*0.075); g.fillStyle = '#111'; g.fillRect(0, 0, bw, h); g.fillRect(w-bw, 0, bw, h);
+    g.fillStyle = '#f2ece0'; for(let y=18; y<h; y+=46){ rr(g, bw*0.28, y, bw*0.44, 24, 5); g.fill(); rr(g, w-bw*0.72, y, bw*0.44, 24, 5); g.fill(); }
+  }
+}
+function star(g, x, y, r, a){ g.save(); g.globalAlpha = a; g.fillStyle = '#fff8d6'; g.shadowColor = '#ffd76a'; g.shadowBlur = 8;
+  g.beginPath(); g.moveTo(x, y-r); g.quadraticCurveTo(x, y, x+r, y); g.quadraticCurveTo(x, y, x, y+r); g.quadraticCurveTo(x, y, x-r, y); g.quadraticCurveTo(x, y, x, y-r); g.fill(); g.restore(); }
+function fxDraw(ts){
+  if(!FX.on) return;
+  FX.raf = requestAnimationFrame(fxDraw);
+  if(ts - FX.last < 30 || !$('#player').classList.contains('hidden')) return; FX.last = ts;  // 約 30 fps，回放時暫停
+  const v = $('#cam'), g = FX.g, w = FX.w, h = FX.h, k = $('#fxFrame').value;
+  if(!v.videoWidth) return;
+  const s = Math.max(w/v.videoWidth, h/v.videoHeight), dw = v.videoWidth*s, dh = v.videoHeight*s;
+  g.save(); g.globalCompositeOperation = 'source-over'; g.globalAlpha = 1;
+  if($('#optMirror').checked){ g.translate(w, 0); g.scale(-1, 1); }
+  g.drawImage(v, (w-dw)/2, (h-dh)/2, dw, dh); g.restore();
+  (FILTERS[$('#fxFilter').value]||[]).forEach(([op, a, col]) => {
+    g.globalAlpha = a;
+    if(op==='soft'){ FX.sg.drawImage(FX.cv, 0, 0, 90, 160); g.globalCompositeOperation = 'source-over'; g.drawImage(FX.sm, 0, 0, w, h); }
+    else if(op==='vignette'){ g.globalCompositeOperation = 'source-over'; g.fillStyle = FX.vig; g.fillRect(0, 0, w, h); }
+    else { g.globalCompositeOperation = op; g.fillStyle = col; g.fillRect(0, 0, w, h); }
+  });
+  g.globalCompositeOperation = 'source-over'; g.globalAlpha = 1;
+  if(k==='none') return;
+  if(k==='neon') g.globalAlpha = 0.8 + 0.2*Math.sin(ts/300);
+  g.drawImage(FX.frame, 0, 0); g.globalAlpha = 1;
+  if(k==='sparkle') SPARKS.forEach(p => { const a = Math.sin(ts/1000*p.sp + p.ph); if(a > 0.05) star(g, p.x*w, p.y*h, p.r*a, a); });
 }
 
 /* ---------- 開播／結束 ---------- */
@@ -582,16 +814,24 @@ async function startLive(){
   S.scene = $('#scene').value; S.targetViewers = targetViewers();
   setHost(); $('#ovTitle').textContent = $('#title').value;
   $('#btnStart').disabled = true;
-  document.body.classList.add('living');
+  document.body.classList.add('living'); fxLayout();
   try{ if(MOBILE && document.documentElement.requestFullscreen) await document.documentElement.requestFullscreen(); }catch(e){}
   const cd = $('#cd'); cd.classList.add('show');
   for(let i=3;i>0;i--){ cd.textContent=i; await new Promise(r=>setTimeout(r,1000)); }
   cd.classList.remove('show');
-  Object.assign(S, {viewers:1, perf:1, peak:0, likes:0, follows:0, series:[], likesSeries:[], events:[], transcript:[], fillers:{}, silences:[], marks:[], silenceStart:null, questionsShown:0, chunks:[], recent:[]});
+  Object.assign(S, {viewers:1, perf:1, peak:0, likes:0, follows:0, series:[], likesSeries:[], events:[], transcript:[], fillers:{}, silences:[], marks:[], silenceStart:null, questionsShown:0, chunks:[], recent:[],
+    chals:[], chal:null, bag:null, nextChal:chalGap(true)});
   $('#chat').innerHTML=''; setLikesUI(0); setViewersUI(1); renderAvatars(NAMES.slice().sort(()=>Math.random()-0.5).slice(0,3));
   S.mime = pickMime(); S.ext = S.mime.includes('mp4') ? 'mp4' : 'webm';
-  try{ S.recorder = new MediaRecorder(S.stream, S.mime ? {mimeType:S.mime, videoBitsPerSecond:2500000} : undefined); }
-  catch(e){ S.recorder = new MediaRecorder(S.stream); S.ext='webm'; }
+  // 有濾鏡或外框時錄畫布，否則錄原始鏡頭
+  let src = S.stream; S.fxRec = null; S.fxTrack = null;
+  if(FX.on){ try{ S.fxTrack = FX.cv.captureStream(30).getVideoTracks()[0]; src = new MediaStream([S.fxTrack].concat(S.stream.getAudioTracks())); S.fxRec = {filter:$('#fxFilter').value, frame:$('#fxFrame').value}; }catch(e){ src = S.stream; S.fxRec = null; } }
+  try{ S.recorder = new MediaRecorder(src, S.mime ? {mimeType:S.mime, videoBitsPerSecond:2500000} : undefined); }
+  catch(e){
+    try{ S.recorder = new MediaRecorder(src); }
+    catch(_){ S.recorder = new MediaRecorder(S.stream); S.fxRec = null; toast('這支手機無法錄下濾鏡，改錄原始畫面'); }
+    S.ext = (S.recorder.mimeType||'').includes('mp4') ? 'mp4' : 'webm';
+  }
   S.recorder.ondataavailable = e => { if(e.data && e.data.size) S.chunks.push(e.data); };
   S.recorder.onstop = finishSession;
   S.recorder.start(1000);
@@ -607,27 +847,32 @@ function endLive(){
   if(!S.live) return;
   const t = now();
   if(S.silenceStart!==null){ S.silences.push({s:S.silenceStart, e:t}); S.silenceStart=null; }
+  if(S.chal){ S.chal.ok = false; S.chal.done = t; S.chal = null; }
+  freeze(false); showChal(null);
   S.duration = t; S.live = false; S.recOn = false; keepAwake(false);
   try{ S.rec && S.rec.stop(); }catch(e){}
   clearInterval(S.timer); clearTimeout(S.chatTimer);
   $('#warn').classList.remove('show'); $('#pLive').classList.add('hidden'); $('#confirm').classList.remove('show'); showSub('');
-  document.body.classList.remove('living');
+  document.body.classList.remove('living'); fxLayout();
   try{ if(document.fullscreenElement) document.exitFullscreen(); }catch(e){}
   S.recorder.stop();
 }
 function mark(){ if(!S.live) return; const t=now(); S.marks.push(t); toast('已標記 '+fmt(t)); }
 async function finishSession(){
+  if(S.fxTrack){ S.fxTrack.stop(); S.fxTrack = null; }
   const blob = new Blob(S.chunks, {type: S.mime || 'video/webm'});
   const d = new Date();
   const sess = { id:'r'+d.getTime(), host: $('#host').value.trim()||'主播', title: $('#title').value||'未命名直播',
     scene:S.scene, sceneName: $('#scene').selectedOptions[0].textContent, created:d.toISOString(), duration:S.duration, ext:S.ext,
     targetViewers:S.targetViewers, peak:S.peak, avg: (()=>{ const a = S.series.length>45 ? S.series.slice(30) : S.series; return a.length ? Math.round(a.reduce((x,y)=>x+y,0)/a.length) : 0; })(),
     likes:S.likes, follows:S.follows, series:S.series.slice(), likesSeries:S.likesSeries.slice(), events:S.events.slice(), transcript:S.transcript.slice(),
-    fillers:Object.assign({},S.fillers), silences:S.silences.slice(), marks:S.marks.slice(), questions:S.questionsShown, blob };
+    fillers:Object.assign({},S.fillers), silences:S.silences.slice(), marks:S.marks.slice(), questions:S.questionsShown, blob,
+    targetMin: Math.max(1, +$('#target').value||5), chals: S.chals.map(({re, ...c}) => c),
+    filter: S.fxRec ? S.fxRec.filter : 'none', frame: S.fxRec ? S.fxRec.frame : 'none' };
   sessions.unshift(sess); await idbPut(sess);
   $('#btnStart').disabled = false;
   renderSessions(); showTab('review'); openSession(sess.id);
-  toast('錄影已存好，開始回放吧');
+  const sc = sessScore(sess); toast(`錄影已存好：${sc.score} 分（${sc.grade}｜${sc.label}）`);
 }
 
 /* ---------- 儲存（只存在這台裝置的瀏覽器） ---------- */
@@ -650,7 +895,7 @@ function renderSessions(){
     b.innerHTML='<div><div class="t"></div><div class="m"></div></div><div class="m"></div>';
     b.querySelector('.t').textContent = s.title;
     b.querySelectorAll('.m')[0].textContent = `${s.host||''}　${s.sceneName}　${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
-    b.querySelectorAll('.m')[1].textContent = fmt(s.duration);
+    const sc = sessScore(s); b.querySelectorAll('.m')[1].textContent = `${sc.score} 分 ${sc.grade}・${fmt(s.duration)}`;
     b.onclick = () => openSession(s.id);
     box.appendChild(b);
   });
@@ -663,11 +908,45 @@ function sessStats(s){
   const retain = s.targetViewers ? Math.round(s.avg/s.targetViewers*100) : null;
   return {silTotal, fillTotal, rate: chars ? Math.round(chars/speakMin) : null, retain};
 }
+/* ---------- 總分與稱號 ---------- */
+const GRADES = [[90,'S','傳奇主播'],[80,'A','人氣主播'],[65,'B','穩定發揮'],[50,'C','再接再厲'],[0,'D','新手上路']];
+const BADGES = [
+  ['🎤','控場王', (s,st)=>s.duration>=60 && !s.silences.length],
+  ['✨','零贅字', (s,st)=>s.duration>=60 && s.transcript.length>0 && !st.fillTotal],
+  ['🔥','人氣爆棚', (s,st)=>!!s.targetViewers && s.peak>=s.targetViewers*1.05],
+  ['🧊','臨危不亂', (s,st)=>(s.chals||[]).length>=2 && s.chals.every(c=>c.ok)],
+  ['🕺','即興之星', (s,st)=>(s.chals||[]).some(c=>c.check==='move' && c.ok)],
+  ['⏱️','準時收播', (s,st)=>Math.abs(s.duration-(s.targetMin||5)*60) <= (s.targetMin||5)*6],
+  ['🗣️','語速剛好', (s,st)=>st.rate>=170 && st.rate<=280]
+];
+function sessScore(s){
+  const st = sessStats(s), D = Math.max(1, s.duration), ch = s.chals||[], parts = [];
+  if(s.targetViewers) parts.push([30, Math.min(1, s.avg/s.targetViewers)]);          // 觀眾留存
+  parts.push([20, Math.max(0, 1 - st.silTotal/D*4)]);                                 // 冷場占 25% 以上 0 分
+  if(s.transcript.length) parts.push([15, Math.max(0, 1 - st.fillTotal/(D/60)/6)]);  // 每分鐘 6 個贅字以上 0 分
+  if(ch.length) parts.push([20, ch.filter(c=>c.ok).length/ch.length]);                // 突發挑戰
+  parts.push([15, Math.min(1, D/((s.targetMin||5)*60))]);                             // 時長達標
+  const score = Math.round(parts.reduce((a,[w,v])=>a+w*v, 0) / parts.reduce((a,[w])=>a+w, 0) * 100);
+  const [, grade, label] = GRADES.find(g=>score>=g[0]);
+  return {score, grade, label, badges: BADGES.filter(b=>b[2](s,st)).map(b=>[b[0], b[1]])};
+}
+function renderScore(s){
+  const sc = sessScore(s), d = new Date(s.created), box = $('#dScore');
+  const best = sessions.length>1 && sessions.every(x=>x===s || sessScore(x).score<=sc.score);
+  box.innerHTML = '<div class="num"></div><div><div class="gr"></div><div class="meta"></div></div><div class="badges"></div>';
+  box.querySelector('.num').innerHTML = `${sc.score}<small>分</small>`;
+  box.querySelector('.gr').textContent = `${sc.grade}｜${sc.label}`;
+  box.querySelector('.meta').textContent = `${s.host||'主播'}・${s.sceneName}・${d.getMonth()+1}/${d.getDate()}`;
+  const list = (best ? [['🏆','個人最佳']] : []).concat(sc.badges), bx = box.querySelector('.badges');
+  if(!list.length) bx.innerHTML = '<span class="badge dim">這場還沒拿到稱號，下次挑戰看看！</span>';
+  list.forEach(([e, n]) => { const b = document.createElement('span'); b.className = 'badge'; b.textContent = e+' '+n; bx.appendChild(b); });
+}
 function openSession(id){
   cur = sessions.find(s=>s.id===id); if(!cur) return;
   renderSessions();
   $('#detail').classList.remove('hidden');
   $('#dTitle').textContent = cur.title;
+  renderScore(cur);
   const p = $('#player');
   if(p.dataset.url) URL.revokeObjectURL(p.dataset.url);
   const url = URL.createObjectURL(cur.blob); p.dataset.url=url; p.src=url;
@@ -679,6 +958,8 @@ function openSession(id){
   const st = sessStats(cur);
   const stats = [['時長',fmt(cur.duration)],['設定人數',cur.targetViewers?fmtN(cur.targetViewers):'—'],['最高觀看',fmtN(cur.peak)],['觀眾留存', st.retain!==null?st.retain+'%':'—', st.retain!==null && st.retain<70],
     ['冷場次數',cur.silences.length,cur.silences.length>2],['冷場總秒數',Math.round(st.silTotal)+'s',st.silTotal>20],['贅字',st.fillTotal,st.fillTotal>10],['語速（字/分）',st.rate??'—']];
+  const ch = cur.chals||[], chOk = ch.filter(c=>c.ok).length;
+  if(ch.length) stats.push(['突發挑戰', chOk+'/'+ch.length, chOk < ch.length/2]);
   $('#dStats').innerHTML = stats.map(([k,v,bad])=>`<div class="stat${bad?' bad':''}"><div class="v">${v}</div><div class="k">${k}</div></div>`).join('');
   const fl = Object.entries(cur.fillers).sort((a,b)=>b[1]-a[1]);
   $('#dFillers').innerHTML = fl.length ? fl.map(([f,c])=>`<span class="chip">「${f}」 ${c} 次</span>`).join('') : `<span class="hint" style="margin:0">${cur.transcript.length?'沒有偵測到贅字，很乾淨。':'這場沒有逐字稿（字幕功能未啟用或不支援）。'}</span>`;
@@ -696,6 +977,7 @@ function openSession(id){
   cur.silences.forEach(s=>{ const e=document.createElement('div'); e.className='seg'; e.style.left=(s.s/D*100)+'%'; e.style.width=Math.max(0.6,(s.e-s.s)/D*100)+'%'; tl.appendChild(e); });
   cur.events.filter(e=>e.kind==='q').forEach(q=>{ const e=document.createElement('div'); e.className='qd'; e.style.left=(q.t/D*100)+'%'; tl.appendChild(e); });
   cur.marks.forEach(m=>{ const e=document.createElement('div'); e.className='mk'; e.style.left=(m/D*100)+'%'; e.title='標記 '+fmt(m); tl.appendChild(e); });
+  ch.forEach(c=>{ const e=document.createElement('div'); e.className='ch'+(c.ok?'':' ng'); e.style.left=(c.t/D*100)+'%'; e.title=c.title+(c.ok?' ✓':' ✗'); tl.appendChild(e); });
   const ph=document.createElement('div'); ph.className='ph'; ph.id='ph'; tl.appendChild(ph);
   drawSpark();
   $('#coach').classList.add('hidden'); $('#coach').textContent='';
@@ -717,7 +999,9 @@ function drawSpark(){
 function renderOverlayAt(t, force){
   if(!cur) return;
   const show = $('#optReplayOv').checked;
-  ['#chat','#hearts','#gift','#pinned'].forEach(s=>$(s).classList.toggle('hidden',!show));
+  ['#chat','#hearts','#gift','#pinned','#chal'].forEach(s=>$(s).classList.toggle('hidden',!show));
+  const c = show ? (cur.chals||[]).find(x=>t>=x.t && t<=(x.done??x.e)+2.5) : null;
+  showChal(c||null, !!c && t>=(c.done??c.e), t);
   const comments = cur.events.filter(e=>e.type==='comment' && e.t<=t && t-e.t<30).slice(-9);
   const key = comments.length ? comments[comments.length-1].t+'|'+comments.length : 'none';
   if(force || key!==lastKey){
@@ -741,13 +1025,15 @@ function replayLoop(){ const p=$('#player'); if(cur && !p.classList.contains('hi
 function showPlayer(on){
   $('#player').classList.toggle('hidden', !on);
   $('#cam').classList.toggle('hidden', on);
+  $('#fx').classList.toggle('hidden', on || !FX.on);
   $('#empty').classList.toggle('hidden', on || !!S.stream);
   if(!on){
-    $('#player').pause(); $('#chat').innerHTML=''; ['#pinned','#warn','#gift'].forEach(s=>$(s).classList.remove('show'));
-    ['#chat','#hearts','#gift','#pinned'].forEach(s=>$(s).classList.remove('hidden'));
+    $('#player').pause(); $('#chat').innerHTML=''; ['#pinned','#warn','#gift'].forEach(s=>$(s).classList.remove('show')); showChal(null);
+    ['#chat','#hearts','#gift','#pinned','#chal'].forEach(s=>$(s).classList.remove('hidden'));
     showSub(''); $('#pTime').textContent='00:00'; setViewersUI(0); setLikesUI(0); $('#barFill').style.width='0';
     $('#ovTitle').textContent=$('#title').value; setHost(); renderAvatars([]);
   }
+  fxLayout();
 }
 
 /* ---------- AI 教練 ---------- */
@@ -757,12 +1043,13 @@ async function coach(){
   const box=$('#coach'); box.classList.remove('hidden'); box.textContent='分析中…';
   $('#btnCoach').disabled=true; $('#btnStop').classList.remove('hidden');
   coachCtl = new AbortController();
-  const st = sessStats(cur);
+  const st = sessStats(cur), sc = sessScore(cur);
   const tr = cur.transcript.map(l=>`[${fmt(l.t)}] ${l.text}`).join('\n') || '（無逐字稿）';
   const qs = cur.events.filter(e=>e.kind==='q').map(e=>`[${fmt(e.t)}] ${e.text}`).join('\n') || '（無）';
   const prompt = `你是專業的直播主持教練，請用繁體中文、條理清楚地給這位練習者回饋。
 情境：${cur.sceneName}；直播標題：${cur.title}；主播：${cur.host}
 數據：時長 ${fmt(cur.duration)}，設定觀看人數 ${cur.targetViewers}，最高觀看 ${cur.peak}，平均觀看 ${cur.avg}（留存 ${st.retain}%），冷場 ${cur.silences.length} 次（共 ${Math.round(st.silTotal)} 秒，時間點：${cur.silences.map(s=>fmt(s.s)).join('、')||'無'}），贅字統計：${JSON.stringify(cur.fillers)}，語速每分鐘 ${st.rate??'未知'} 字。
+總分 ${sc.score}（${sc.grade}）；突發挑戰：${(cur.chals||[]).map(c=>`[${fmt(c.t)}] ${c.title}${c.ok?'成功':'未完成'}`).join('、')||'無'}
 直播中觀眾的提問（模擬）：
 ${qs}
 練習者逐字稿（語音辨識，可能有錯字）：
@@ -802,13 +1089,16 @@ async function saveFile(filename, data, type){
 }
 function stamp(s){ const d=new Date(s.created); return `${d.getMonth()+1}${String(d.getDate()).padStart(2,'0')}_${String(d.getHours()).padStart(2,'0')}${String(d.getMinutes()).padStart(2,'0')}`; }
 function report(s){
-  const st = sessStats(s), d = new Date(s.created);
+  const st = sessStats(s), d = new Date(s.created), sc = sessScore(s);
   const L = [];
-  L.push(`# 直播練習成績單`,``,`- 主播：${s.host}`,`- 標題：${s.title}`,`- 情境：${s.sceneName}`,`- 日期：${d.toLocaleString('zh-TW')}`,``,`## 數據`,
+  L.push(`# 直播練習成績單`,``,`- 主播：${s.host}`,`- 標題：${s.title}`,`- 情境：${s.sceneName}`,`- 日期：${d.toLocaleString('zh-TW')}`,
+    `- 總分：${sc.score} 分（${sc.grade}｜${sc.label}）`,`- 稱號：${sc.badges.map(b=>b.join(' ')).join('、')||'無'}`,``,`## 數據`,
     `- 時長：${fmt(s.duration)}`,`- 設定觀看人數：${s.targetViewers||'—'}`,`- 最高觀看：${s.peak}　平均觀看：${s.avg}　留存：${st.retain??'—'}%`,
     `- 按讚：${s.likes}　新追蹤：${s.follows||0}`,`- 冷場：${s.silences.length} 次，共 ${Math.round(st.silTotal)} 秒`,
     `- 贅字：${st.fillTotal} 次 ${Object.entries(s.fillers).map(([f,c])=>`（${f} ${c}）`).join('')}`,`- 語速：${st.rate??'—'} 字/分`,
-    `- 標記時間點：${s.marks.map(fmt).join('、')||'無'}`,``,`## 觀眾提問`, ...(s.events.filter(e=>e.kind==='q').map(e=>`- [${fmt(e.t)}] ${e.text}`)), ``,
+    `- 標記時間點：${s.marks.map(fmt).join('、')||'無'}`,``,
+    `## 突發挑戰`, ...((s.chals||[]).length ? s.chals.map(c=>`- [${fmt(c.t)}] ${c.title}：${c.ok?'✓ 成功':'✗ 未完成'}`) : ['（無）']), ``,
+    `## 觀眾提問`, ...(s.events.filter(e=>e.kind==='q').map(e=>`- [${fmt(e.t)}] ${e.text}`)), ``,
     `## 逐字稿`, ...(s.transcript.length ? s.transcript.map(l=>`[${fmt(l.t)}] ${l.text}`) : ['（無）']));
   if(s.coach) L.push(``,`## AI 教練回饋`, s.coach);
   return L.join('\n');
@@ -864,11 +1154,14 @@ $('#btnDel').onclick = async () => {
   $('#detail').classList.add('hidden'); showPlayer(false); renderSessions(); toast('已刪除');
 };
 $('#btnOffline').onclick = () => saveFile('直播練習室.html', SOURCE, 'text/html');
-window.addEventListener('resize', () => { if(cur) drawSpark(); });
+window.addEventListener('resize', () => { if(cur) drawSpark(); fxLayout(); });
+['#fxFilter','#fxFrame'].forEach(s=>$(s).onchange = fxSync);
+$('#fxText').oninput = fxFrame;
 
 /* ---------- 啟動 ---------- */
 (async () => {
   setHost(); $('#ovTitle').textContent = $('#title').value;
+  fxInit(); if(document.fonts) document.fonts.ready.then(fxFrame);
   dbh = await idbOpen();
   sessions = (await idbAll()).map(s=>Object.assign({host:'主播', likesSeries:[], follows:0}, s)).sort((a,b)=>b.created.localeCompare(a.created));
   renderSessions();
