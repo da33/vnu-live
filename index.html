@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>直播練習室</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#ECE9F1; --surface:#FFFFFF; --ink:#221A2C; --muted:#6E6579; --line:#D6D0DE;
+  --accent:#3B4CFF; --accent-ink:#FFFFFF; --live:#FE2C55; --ok:#1E9E6A; --warn:#C97F00; --soft:#F5F3F8;
+  color-scheme:light; box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#17131C;--surface:#221C29;--ink:#F1EDF5;--muted:#A79FB2;--line:#3A3243;--accent:#8C97FF;--accent-ink:#17131C;--soft:#2A2332;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#17131C;--surface:#221C29;--ink:#F1EDF5;--muted:#A79FB2;--line:#3A3243;--accent:#8C97FF;--accent-ink:#17131C;--soft:#2A2332;color-scheme:dark}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+button,select,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+header.top{display:flex;align-items:center;gap:16px;padding:14px 20px;max-width:1200px;margin:0 auto}
+.brand{font-weight:900;font-size:1.25rem;display:flex;align-items:center;gap:10px}
+.brand .dot{width:12px;height:12px;border-radius:50%;background:var(--live);box-shadow:0 0 0 4px color-mix(in srgb,var(--live) 25%,transparent)}
+.tabs{margin-left:auto;display:flex;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:3px}
+.tabs button{border:0;background:transparent;padding:6px 16px;border-radius:999px;font-weight:500;color:var(--muted)}
+.tabs button[aria-selected="true"]{background:var(--ink);color:var(--bg)}
+main{max-width:1200px;margin:0 auto;padding:0 20px 40px;display:grid;grid-template-columns:minmax(280px,420px) 1fr;gap:28px;align-items:start}
+
+/* ---------- stage（直播畫面） ---------- */
+.stage{position:relative;aspect-ratio:9/16;width:100%;max-width:420px;margin:0 auto;background:#000;border-radius:22px;overflow:hidden;box-shadow:0 18px 50px -20px rgba(30,10,50,.55);color:#fff}
+.stage video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#000}
+.stage video.mirror{transform:scaleX(-1)}
+.empty{position:absolute;inset:0;display:grid;place-items:center;text-align:center;color:#d9d3e2;padding:24px;z-index:3}
+.empty p{margin:0 0 14px;font-size:.95rem}
+.ov{position:absolute;inset:0;pointer-events:none;text-shadow:0 1px 2px rgba(0,0,0,.45);font-size:14px;z-index:2}
+.ov button{pointer-events:auto;border:0;background:transparent;color:#fff;padding:0}
+.ovtop{position:absolute;top:calc(10px + var(--sat,0px));left:10px;right:10px;display:flex;align-items:center;gap:8px}
+.host{display:flex;align-items:center;gap:6px;background:rgba(0,0,0,.32);border-radius:999px;padding:3px 4px 3px 3px;min-width:0;max-width:60%}
+.av{width:32px;height:32px;border-radius:50%;flex:none;display:grid;place-items:center;font-weight:700;font-size:13px;text-shadow:none;border:1.5px solid rgba(255,255,255,.85)}
+.hn{display:flex;flex-direction:column;line-height:1.2;min-width:0}
+.hn b{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hn small{font-size:11px;opacity:.85}
+.follow{background:var(--live);border-radius:999px;padding:4px 10px;font-size:12px;font-weight:700;flex:none;text-shadow:none}
+.tr{margin-left:auto;display:flex;align-items:center;gap:6px}
+.avs{display:flex}
+.avs .av{width:28px;height:28px;font-size:11px;margin-left:-8px;border-width:1.5px}
+.vc{background:rgba(0,0,0,.32);border-radius:999px;padding:4px 9px;font-size:12px;font-weight:700;min-width:36px;text-align:center;font-variant-numeric:tabular-nums}
+.x{width:30px;height:30px;font-size:20px;line-height:30px;text-align:center;display:none}
+body.living .x{display:block}
+.tags{position:absolute;top:calc(50px + var(--sat,0px));left:10px;right:10px;display:flex;gap:6px;align-items:center}
+.pill{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:5px;font-size:12px;font-weight:700;background:rgba(0,0,0,.3);white-space:nowrap}
+.pill.live{background:var(--live);text-shadow:none}
+.pill.tt{overflow:hidden;text-overflow:ellipsis;font-weight:500;min-width:0}
+.pinned{position:absolute;top:calc(80px + var(--sat,0px));left:10px;right:10px;background:rgba(255,255,255,.95);color:#1d1d1f;text-shadow:none;border-radius:10px;padding:7px 11px;font-size:13px;display:none}
+.pinned b{display:block;font-size:11px;color:var(--live)}
+.pinned.show{display:block;animation:pop .25s ease-out}
+@keyframes pop{from{transform:scale(.94);opacity:0}}
+.gift{position:absolute;left:10px;bottom:calc(var(--chatTop) + 8px);display:none;align-items:center;gap:8px;background:linear-gradient(90deg,rgba(254,44,85,.85),rgba(254,44,85,0));border-radius:999px;padding:3px 40px 3px 3px;text-shadow:none}
+.gift.show{display:flex;animation:gin .35s ease-out}
+@keyframes gin{from{transform:translateX(-110%)}}
+.gift .gt{display:flex;flex-direction:column;line-height:1.2;font-size:12px}
+.gift .gt b{font-size:13px}
+.gift .ge{font-size:28px;margin-left:4px}
+.gift .gx{font-size:22px;font-weight:900;font-style:italic;color:#FFE14D;text-shadow:0 1px 2px rgba(0,0,0,.4)}
+.stage{--chatTop:calc(56px + 32% + var(--sab,0px))}
+.chat{position:absolute;left:10px;bottom:calc(58px + var(--sab,0px));width:70%;height:32%;display:flex;flex-direction:column;justify-content:flex-end;gap:4px;overflow:hidden;mask-image:linear-gradient(to bottom,transparent 0,#000 28%);-webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 28%)}
+.msg{align-self:flex-start;max-width:100%;background:rgba(0,0,0,.22);border-radius:12px;padding:3px 9px;font-size:13px;line-height:1.45;animation:slide .2s ease-out}
+.msg .n{color:rgba(255,255,255,.72);margin-right:6px;font-weight:500}
+.msg.q{background:rgba(255,190,40,.9);color:#2a1a00;text-shadow:none}
+.msg.q .n{color:#6b4500}
+.msg.sys{background:transparent;color:rgba(255,255,255,.8);padding-left:2px}
+.msg.sys .n{color:#9FE3FF}
+.msg.gf .n{color:#FFB3C3}
+@keyframes slide{from{transform:translateY(6px);opacity:0}}
+.sub{position:absolute;left:12px;right:12px;top:52%;text-align:center;font-size:15px;font-weight:500}
+.sub span{background:rgba(0,0,0,.5);padding:2px 8px;border-radius:6px;box-decoration-break:clone;-webkit-box-decoration-break:clone}
+.hearts{position:absolute;right:6px;bottom:calc(58px + var(--sab,0px));width:56px;height:55%}
+.heart{position:absolute;bottom:0;font-size:24px;animation:float 2.6s ease-out forwards}
+@keyframes float{to{transform:translate(var(--dx),-320px) scale(1.3);opacity:0}}
+.bottom{position:absolute;left:10px;right:10px;bottom:calc(12px + var(--sab,0px));display:flex;align-items:center;gap:8px}
+.say{flex:1;background:rgba(0,0,0,.32);border-radius:999px;padding:7px 14px;font-size:13px;color:rgba(255,255,255,.75)}
+.ib{width:36px;height:36px;border-radius:50%;background:rgba(0,0,0,.32)!important;display:grid;place-items:center;font-size:17px;flex:none}
+.warnchip{position:absolute;left:50%;top:42%;transform:translate(-50%,-50%);background:rgba(201,127,0,.92);padding:7px 14px;border-radius:10px;font-weight:700;font-size:13px;display:none;text-shadow:none;white-space:nowrap}
+.warnchip.show{display:block}
+.countdown{position:absolute;inset:0;display:none;place-items:center;font-size:7rem;font-weight:900;background:rgba(0,0,0,.35)}
+.countdown.show{display:grid}
+.confirm{position:absolute;inset:0;display:none;place-items:center;background:rgba(0,0,0,.55);pointer-events:auto;text-shadow:none}
+.confirm.show{display:grid}
+.confirm .box{background:#fff;color:#1d1d1f;border-radius:16px;padding:20px;width:78%;text-align:center}
+.confirm p{margin:0 0 14px;font-weight:700;font-size:16px}
+.confirm .box div{display:flex;gap:10px}
+.confirm button{flex:1;border-radius:10px!important;padding:10px!important;font-weight:700;color:#1d1d1f!important;background:#eee!important}
+.confirm button.end{background:var(--live)!important;color:#fff!important}
+.bar{position:absolute;left:0;right:0;top:0;height:3px;background:rgba(255,255,255,.15)}
+.bar i{display:block;height:100%;width:0;background:var(--live);transition:width .5s linear}
+.backdrop{display:none}
+body.living .backdrop{display:block;position:fixed;inset:0;background:#000;z-index:39}
+body.living .stage{position:fixed;z-index:40;top:0;bottom:0;left:50%;transform:translateX(-50%);height:100%;width:min(100vw,calc(100vh*9/16));max-width:none;aspect-ratio:auto;border-radius:0;--sat:env(safe-area-inset-top,0px);--sab:env(safe-area-inset-bottom,0px)}
+body.living{overflow:hidden}
+
+/* ---------- panel ---------- */
+.panel{display:flex;flex-direction:column;gap:18px;min-width:0}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px 20px}
+.card h2{font-size:1.05rem;margin:0 0 12px}
+.card h3{font-size:.95rem;margin:16px 0 8px}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.row+.row,.field+.row,.row+.field{margin-top:10px}
+.field{display:flex;flex-direction:column;gap:4px;flex:1 1 160px;min-width:0}
+.field label,.lbl{font-size:.85rem;color:var(--muted)}
+select,input[type=text],input[type=number],textarea{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:10px;background:var(--soft)}
+textarea{min-height:70px;resize:vertical}
+.check{display:flex;align-items:center;gap:8px;font-size:.92rem}
+.btn{border:1px solid var(--line);background:var(--surface);padding:10px 18px;border-radius:12px;font-weight:700}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.live{background:var(--live);border-color:var(--live);color:#fff}
+.btn.big{padding:14px 26px;font-size:1.05rem}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.controls{display:flex;gap:10px;flex-wrap:wrap}
+.meter{height:8px;border-radius:4px;background:var(--soft);overflow:hidden;flex:1;min-width:120px}
+.meter i{display:block;height:100%;width:0;background:var(--ok);transition:width .1s}
+.hint{font-size:.85rem;color:var(--muted);margin:8px 0 0}
+.err{color:var(--live);font-size:.9rem;margin:8px 0 0}
+.livestats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.stat{background:var(--soft);border-radius:12px;padding:10px 12px}
+.stat .v{font-size:1.4rem;font-weight:900;line-height:1.2;font-variant-numeric:tabular-nums}
+.stat .k{font-size:.8rem;color:var(--muted)}
+.stat.bad .v{color:var(--warn)}
+.sessions{display:flex;flex-direction:column;gap:8px}
+.sess{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--soft);text-align:left;width:100%}
+.sess[aria-current="true"]{border-color:var(--accent);box-shadow:inset 3px 0 0 var(--accent)}
+.sess .t{font-weight:700}
+.sess .m{font-size:.82rem;color:var(--muted)}
+.timeline{position:relative;height:38px;border-radius:10px;background:var(--soft);cursor:pointer;margin-top:6px;overflow:hidden}
+.timeline .seg{position:absolute;top:0;bottom:0;background:color-mix(in srgb,var(--warn) 35%,transparent)}
+.timeline .mk{position:absolute;top:4px;bottom:4px;width:3px;margin-left:-1px;background:var(--accent);border-radius:2px}
+.timeline .qd{position:absolute;bottom:4px;width:7px;height:7px;margin-left:-3px;border-radius:50%;background:#FFB000}
+.timeline .ph{position:absolute;top:0;bottom:0;width:2px;background:var(--ink)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:.8rem;color:var(--muted);margin-top:6px}
+.legend span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px;background:var(--c)}
+.spark{width:100%;height:70px;display:block}
+.transcript{max-height:280px;overflow:auto;display:flex;flex-direction:column;gap:2px}
+.line{display:flex;gap:10px;padding:5px 6px;border-radius:8px;text-align:left;border:0;background:transparent;width:100%}
+.line:hover{background:var(--soft)}
+.line time{font-variant-numeric:tabular-nums;color:var(--muted);font-size:.82rem;flex:none;padding-top:2px}
+.line mark{background:color-mix(in srgb,var(--warn) 30%,transparent);color:inherit;border-radius:3px;padding:0 1px}
+.coach{white-space:pre-wrap;background:var(--soft);border-radius:12px;padding:14px;font-size:.93rem;max-height:420px;overflow:auto}
+.filters{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-size:.85rem;padding:3px 10px;border-radius:999px;background:var(--soft);border:1px solid var(--line)}
+.hidden{display:none!important}
+.toast{position:fixed;left:50%;bottom:calc(80px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:rgba(20,20,20,.88);color:#fff;padding:10px 18px;border-radius:12px;font-size:.9rem;z-index:60;opacity:0;transition:opacity .2s;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:1}
+@media (max-width:820px){
+  main{grid-template-columns:1fr;padding:0 12px 32px}
+  .stage{width:min(100%,calc(68vh*9/16))}
+  #ctrlCard{order:-1}
+  header.top{padding:10px 12px}
+  .btn.big{flex:1 1 100%}
+}
+@media (max-width:520px){.livestats{grid-template-columns:repeat(2,1fr)}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="backdrop"></div>
+<header class="top">
+  <div class="brand"><span class="dot" aria-hidden="true"></span>直播練習室</div>
+  <nav class="tabs" role="tablist">
+    <button role="tab" id="tabStudio" aria-selected="true">練習開播</button>
+    <button role="tab" id="tabReview" aria-selected="false">錄影回放</button>
+  </nav>
+</header>
+
+<main>
+  <section>
+    <div class="stage" id="stage">
+      <video id="cam" class="mirror" playsinline muted autoplay></video>
+      <video id="player" class="hidden" playsinline></video>
+      <div class="empty" id="empty">
+        <div>
+          <p>先開啟鏡頭與麥克風，<br>就能看到自己在直播間裡的樣子。</p>
+          <button class="btn primary" id="btnCam">開啟鏡頭</button>
+        </div>
+      </div>
+      <div class="ov" id="ov">
+        <div class="bar"><i id="barFill"></i></div>
+        <div class="ovtop">
+          <div class="host">
+            <div class="av" id="hostAv">主</div>
+            <div class="hn"><b id="hostName">主播</b><small id="hostLikes">0 讚</small></div>
+            <span class="follow">追蹤</span>
+          </div>
+          <div class="tr">
+            <div class="avs" id="avs"></div>
+            <span class="vc" id="vc">0</span>
+            <button class="x" id="btnX" aria-label="結束直播">✕</button>
+          </div>
+        </div>
+        <div class="tags">
+          <span class="pill live hidden" id="pLive">LIVE</span>
+          <span class="pill" id="pTime">00:00</span>
+          <span class="pill tt" id="ovTitle"></span>
+        </div>
+        <div class="pinned" id="pinned"><b>觀眾提問</b><span></span></div>
+        <div class="sub" id="sub"></div>
+        <div class="gift" id="gift"></div>
+        <div class="chat" id="chat"></div>
+        <div class="hearts" id="hearts"></div>
+        <div class="bottom">
+          <div class="say">說點什麼…</div>
+          <button class="ib" id="btnMark2" aria-label="標記這一刻">🔖</button>
+          <span class="ib" aria-hidden="true">🎁</span>
+          <span class="ib" aria-hidden="true">↗</span>
+          <button class="ib" id="btnHeart" aria-label="按讚">❤️</button>
+        </div>
+        <div class="warnchip" id="warn">冷場中，觀眾正在離開</div>
+        <div class="countdown" id="cd">3</div>
+        <div class="confirm" id="confirm">
+          <div class="box"><p>要結束直播嗎？</p><div><button id="cKeep">繼續直播</button><button class="end" id="cEnd">結束並保存</button></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" id="studio">
+    <div class="card" id="ctrlCard">
+      <div class="controls">
+        <button class="btn live big" id="btnStart" disabled>開始直播</button>
+      </div>
+      <p class="hint">開始後會倒數 3 秒並全螢幕開播，同時錄影。直播中點 🔖 標記重點，點右上角 ✕ 結束。電腦上可按 M 標記、Esc 結束。</p>
+      <p class="hint hidden" id="speechNote"></p>
+    </div>
+
+    <div class="card">
+      <h2>直播間設定</h2>
+      <div class="row">
+        <div class="field"><label for="host">主播名稱（可填姓名或學號）</label><input type="text" id="host" value="Rino老師" maxlength="16"></div>
+        <div class="field"><label for="title">直播標題</label><input type="text" id="title" value="時尚表藝系 線上說明會" maxlength="30"></div>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label for="scene">練習情境</label>
+          <select id="scene">
+            <option value="admissions">招生說明直播</option>
+            <option value="sales">商品介紹／帶貨</option>
+            <option value="talent">才藝表演直播</option>
+            <option value="chat">聊天互動</option>
+          </select>
+        </div>
+        <div class="field"><label for="target">目標長度（分鐘）</label><input type="number" id="target" min="1" max="120" value="5"></div>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label for="vSel">模擬觀看人數</label>
+          <select id="vSel">
+            <option value="10">10 人（小型練習）</option>
+            <option value="50" selected>50 人</option>
+            <option value="200">200 人</option>
+            <option value="1000">1,000 人</option>
+            <option value="5000">5,000 人（大型直播）</option>
+            <option value="custom">自訂</option>
+          </select>
+        </div>
+        <div class="field hidden" id="vCustomBox"><label for="vCustom">自訂人數</label><input type="number" id="vCustom" min="1" max="100000" value="300"></div>
+        <div class="field">
+          <label for="vMode">人數變化</label>
+          <select id="vMode">
+            <option value="perf" selected>依表現升降（冷場會掉人）</option>
+            <option value="fixed">維持設定人數</option>
+          </select>
+        </div>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label for="pace">留言活躍度</label>
+          <select id="pace">
+            <option value="1.8">安靜潛水</option>
+            <option value="1" selected>一般</option>
+            <option value="0.55">熱烈互動</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="optSpeechSel">即時字幕與贅字偵測</label>
+          <select id="optSpeechSel"><option value="on" selected>開啟</option><option value="off">關閉</option></select>
+        </div>
+      </div>
+      <div class="field" style="margin-top:10px">
+        <label for="customQ">自訂觀眾提問（一行一題，會穿插出現）</label>
+        <textarea id="customQ" placeholder="例如：轉學生可以申請嗎？"></textarea>
+      </div>
+      <div class="row">
+        <label class="check"><input type="checkbox" id="optMirror" checked> 鏡像預覽</label>
+      </div>
+      <div class="row">
+        <div class="field"><label for="selCam">鏡頭</label><select id="selCam"></select></div>
+        <div class="field"><label for="selMic">麥克風</label><select id="selMic"></select></div>
+      </div>
+      <div class="row"><span class="lbl">音量</span><div class="meter"><i id="meter"></i></div></div>
+      <p class="err hidden" id="camErr"></p>
+    </div>
+  </section>
+
+  <section class="panel hidden" id="review">
+    <div class="card">
+      <h2>練習紀錄</h2>
+      <div class="sessions" id="sessions"></div>
+      <p class="hint" id="noSess">還沒有紀錄。到「練習開播」完成一場直播，錄影會出現在這裡。</p>
+    </div>
+    <div class="card hidden" id="detail">
+      <h2 id="dTitle"></h2>
+      <div class="row">
+        <label class="check"><input type="checkbox" id="optReplayOv" checked> 重播留言與數據</label>
+        <div class="field" style="flex:0 0 130px">
+          <select id="rate" aria-label="播放速度"><option value="1">1 倍速</option><option value="1.5">1.5 倍速</option><option value="2">2 倍速</option></select>
+        </div>
+        <button class="btn primary" id="btnPlay">播放</button>
+      </div>
+      <div class="timeline" id="timeline" title="點擊跳到該時間"></div>
+      <div class="legend">
+        <span style="--c:var(--accent)">標記</span>
+        <span style="--c:color-mix(in srgb,var(--warn) 50%,transparent)">冷場</span>
+        <span style="--c:#FFB000">觀眾提問</span>
+      </div>
+      <h3>成績</h3>
+      <div class="livestats" id="dStats"></div>
+      <h3>觀看人數走勢</h3>
+      <canvas class="spark" id="spark"></canvas>
+      <h3>贅字統計</h3>
+      <div class="filters" id="dFillers"></div>
+      <h3>逐字稿（點一句跳到該處）</h3>
+      <div class="transcript" id="dTrans"></div>
+      <h3>AI 直播教練</h3>
+      <div class="row">
+        <button class="btn primary" id="btnCoach">取得教練回饋</button>
+        <button class="btn hidden" id="btnStop">停止</button>
+      </div>
+      <div class="coach hidden" id="coach"></div>
+      <h3>檔案</h3>
+      <div class="controls">
+        <button class="btn" id="btnDl">下載錄影</button>
+        <button class="btn" id="btnReport">匯出成績單</button>
+        <button class="btn" id="btnDel">刪除這場</button>
+      </div>
+    </div>
+    <div class="card">
+      <h2>離線版</h2>
+      <p class="hint" style="margin-top:0">下載這個工具的 HTML 檔，可以放到自己的網站上讓學生用手機開啟（手機需要 https 網址才能開鏡頭），或在電腦上用 Chrome 直接開啟。AI 教練只在 Claude 內可用。</p>
+      <button class="btn" id="btnOffline" style="margin-top:10px">下載離線版</button>
+    </div>
+  </section>
+</main>
+<div class="toast" id="toast"></div>
+
+<script>
+const SOURCE = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+const $ = s => document.querySelector(s);
+const fmt = s => { s = Math.max(0, Math.floor(s)); return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0'); };
+const fmtN = n => { n = Math.round(n); if(n < 1000) return String(n); if(n < 1e6) return (n/1000).toFixed(n<10000?1:0).replace(/\.0$/,'')+'K'; return (n/1e6).toFixed(1).replace(/\.0$/,'')+'M'; };
+const rnd = a => a[Math.floor(Math.random()*a.length)];
+const MOBILE = matchMedia('(pointer:coarse)').matches || /Android|iPhone|iPad/i.test(navigator.userAgent);
+const toast = t => { const el=$('#toast'); el.textContent=t; el.classList.add('show'); clearTimeout(toast.h); toast.h=setTimeout(()=>el.classList.remove('show'),2400); };
+let wake = null;
+async function keepAwake(on){ try{ if(on && navigator.wakeLock) wake = await navigator.wakeLock.request('screen'); else if(!on && wake){ await wake.release(); wake=null; } }catch(e){} }
+
+/* ---------- 觀眾腳本 ---------- */
+const NAMES = ['小魚','阿哲','Yuna','晴天','布丁','Kevin','米米','高三小白','舞者阿凱','奶茶','Ray','小熊','芋圓','Jenny','阿宏','啾啾','路人甲','可可','Momo','阿廷','柚子','小安','Leo','珍奶控','Ivy','豆花','Peggy','阿翔','Cindy','小綠','牛奶糖','Ethan'];
+const AVC = ['#FF7A90','#7AA8FF','#FFC24D','#62D4A8','#B58CFF','#FF9F5A','#5ED0E8','#E87AE0'];
+const COMMON = ['來了來了','主播好～','剛下課就來看','聲音很清楚','畫面好亮','哈哈哈','+1','真的假的','好有趣','我朋友也想看','有人一樣是新生嗎','卡卡的嗎？我這邊OK','先按讚','講得好清楚','原來如此','👏👏👏','🔥🔥','😂','求重播','愛了愛了'];
+const LEAVE = ['主播還在嗎？','怎麼不講話了','聲音沒了？','？？？','我先去看別台了','好安靜喔'];
+const SCENES = {
+  admissions:{ open:['老師好！','是說明會嗎？','高三來報到','媽媽陪我一起看'],
+    general:['系上活動好多','好想去參觀','學長姐好帥','有點心動','我是國中生可以看嗎'],
+    questions:['請問要怎麼報名？','學費一學期大概多少？','有宿舍嗎？','畢業出路是什麼？','沒有基礎可以讀嗎？','可以去參觀校園嗎？','有獎學金嗎？','上課會很累嗎？','男生可以讀嗎？','一班大概幾個人？'],
+    keys:[[/學費|費用|錢|價格/,['有獎學金嗎？','可以申請助學貸款嗎？','學雜費包含材料費嗎？']],[/宿舍|住宿|住/,['宿舍是幾人房？','宿舍有冷氣嗎？','外縣市可以優先住宿嗎？']],[/表演|舞|街舞|走秀|公演/,['好想學！','可以看作品嗎？','太帥了吧🔥','公演可以買票去看嗎？']],[/就業|工作|出路|薪水/,['畢業薪水大概多少？','學長姐都去哪工作？']],[/報名|甄選|面試|推甄/,['面試要準備什麼？','截止日期是哪天？','要準備作品集嗎？']],[/實習|產學|業界/,['實習有薪水嗎？','實習可以自己找嗎？']],[/造型|化妝|彩妝|髮型/,['會教新娘秘書嗎？','可以考證照嗎？']]] },
+  sales:{ open:['開賣了嗎！','等好久了','今天有什麼好物'],
+    general:['看起來好好用','顏色好美','我要我要','已經下單','幫我留一個','主播皮膚好好'],
+    questions:['多少錢？','有其他顏色嗎？','可以貨到付款嗎？','運費怎麼算？','什麼時候出貨？','有尺寸表嗎？','敏感肌可以用嗎？'],
+    keys:[[/價格|元|塊|錢|優惠|折/,['還能再便宜嗎？','買二送一嗎？','優惠到什麼時候？']],[/顏色|色/,['黑色還有嗎？','可以看實際顏色嗎？']],[/尺寸|大小|尺碼/,['165公分穿什麼尺寸？','有XL嗎？']],[/出貨|寄|運/,['外島可以寄嗎？']]] },
+  talent:{ open:['來看表演了！','好期待','坐好坐好'],
+    general:['太強了吧','再一次！','這段好帥','節奏感好好','鼓掌👏','雞皮疙瘩','可以教嗎'],
+    questions:['這首歌叫什麼？','練多久了？','可以點歌嗎？','有教學影片嗎？','下次什麼時候直播？'],
+    keys:[[/歌|音樂|曲/,['這首好好聽','可以分享歌單嗎？']],[/練|學/,['新手從哪開始練？','每天練多久？']],[/舞|動作/,['可以放慢一次嗎？','這個動作好難']]] },
+  chat:{ open:['晚安～','又來陪你了','今天好嗎'],
+    general:['好療癒','我也是耶','笑死','真的','同意','今天好累','聽你講話好放鬆'],
+    questions:['你今天吃什麼？','最近在追什麼劇？','你有養寵物嗎？','推薦一首歌？','假日都在幹嘛？'],
+    keys:[[/吃|餐|飯/,['好餓喔','推薦好吃的！']],[/劇|電影/,['那部我也有看！','不要爆雷😂']],[/累|忙/,['辛苦了','要早點休息喔']]] }
+};
+const GIFTS = [['玫瑰','🌹'],['愛心','💖'],['咖啡','☕'],['甜甜圈','🍩'],['星星','⭐'],['跑車','🏎️'],['皇冠','👑']];
+const FILLERS = ['嗯','呃','欸','那個','然後','就是','基本上','其實'];
+
+/* ---------- 狀態 ---------- */
+const S = { stream:null, audioCtx:null, analyser:null, buf:null, recorder:null, chunks:[], mime:'', ext:'webm',
+  live:false, t0:0, timer:null, chatTimer:null, viewers:0, perf:1, peak:0, likes:0, follows:0,
+  series:[], likesSeries:[], events:[], transcript:[], fillers:{}, lastVoice:0, silenceStart:null, silences:[], marks:[],
+  noise:0.01, rec:null, recOn:false, scene:'admissions', questionsShown:0, targetViewers:50, duration:0 };
+const now = () => (performance.now() - S.t0)/1000;
+const targetViewers = () => $('#vSel').value==='custom' ? Math.max(1, +$('#vCustom').value||1) : +$('#vSel').value;
+
+/* ---------- 直播間外觀 ---------- */
+function avatar(el, name){ el.textContent = (name||'?').trim().slice(0,1).toUpperCase(); let h=0; for(const c of name) h=(h*31+c.charCodeAt(0))>>>0; el.style.background = AVC[h%AVC.length]; el.style.color='#fff'; }
+function setHost(){ const n = $('#host').value.trim() || '主播'; $('#hostName').textContent = n; avatar($('#hostAv'), n); }
+function renderAvatars(names){ const box=$('#avs'); box.innerHTML=''; names.slice(0,3).forEach(n=>{ const d=document.createElement('div'); d.className='av'; avatar(d,n); box.appendChild(d); }); }
+function setViewersUI(v){ $('#vc').textContent = fmtN(v); }
+function setLikesUI(l){ $('#hostLikes').textContent = fmtN(l)+' 讚'; }
+
+/* ---------- 鏡頭 ---------- */
+async function openCam(){
+  const err = $('#camErr'); err.classList.add('hidden');
+  try{
+    if(S.stream) S.stream.getTracks().forEach(t=>t.stop());
+    const vId = $('#selCam').value, aId = $('#selMic').value;
+    const vBase = MOBILE ? {} : {width:{ideal:1280}, height:{ideal:720}};
+    S.stream = await navigator.mediaDevices.getUserMedia({
+      video: vId ? Object.assign({deviceId:{exact:vId}}, vBase) : Object.assign({facingMode:'user'}, vBase),
+      audio: Object.assign(aId ? {deviceId:{exact:aId}} : {}, {echoCancellation:true, noiseSuppression:true})
+    });
+    const cam = $('#cam'); cam.srcObject = S.stream; await cam.play().catch(()=>{});
+    $('#empty').classList.add('hidden');
+    $('#btnStart').disabled = false;
+    setupAudio(); await listDevices();
+  }catch(e){
+    err.textContent = (e && e.name==='NotAllowedError')
+      ? '鏡頭或麥克風被拒絕存取。請在瀏覽器允許權限；在 Claude 內打不開的話，到「錄影回放」下載離線版。'
+      : '無法開啟鏡頭：'+(e && e.message ? e.message : e)+'。手機需要用 https 網址開啟才能使用鏡頭。';
+    err.classList.remove('hidden');
+  }
+}
+async function listDevices(){
+  try{
+    const ds = await navigator.mediaDevices.enumerateDevices();
+    const fill = (sel, kind, cur) => { const list = ds.filter(d=>d.kind===kind);
+      sel.innerHTML = list.map((d,i)=>`<option value="${d.deviceId}">${(d.label||kind+' '+(i+1)).replace(/</g,'&lt;')}</option>`).join('');
+      if(cur) sel.value = cur; };
+    const vt = S.stream.getVideoTracks()[0], at = S.stream.getAudioTracks()[0];
+    fill($('#selCam'),'videoinput', vt && vt.getSettings().deviceId);
+    fill($('#selMic'),'audioinput', at && at.getSettings().deviceId);
+  }catch(e){}
+}
+function setupAudio(){
+  try{
+    if(S.audioCtx) S.audioCtx.close();
+    S.audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+    const src = S.audioCtx.createMediaStreamSource(S.stream);
+    S.analyser = S.audioCtx.createAnalyser(); S.analyser.fftSize = 1024;
+    S.buf = new Float32Array(S.analyser.fftSize); src.connect(S.analyser);
+    if(!S.meterLoop){ S.meterLoop = true; requestAnimationFrame(meterTick); }
+  }catch(e){}
+}
+function level(){ if(!S.analyser) return 0; S.analyser.getFloatTimeDomainData(S.buf); let s=0; for(let i=0;i<S.buf.length;i++) s+=S.buf[i]*S.buf[i]; return Math.sqrt(s/S.buf.length); }
+function meterTick(){
+  const l = level();
+  if(l < S.noise*1.6) S.noise = S.noise*0.98 + l*0.02;
+  $('#meter').style.width = Math.min(100, l*600)+'%';
+  const thr = Math.max(0.012, S.noise*2.6);
+  if(S.live){
+    const t = now();
+    if(l > thr){
+      if(S.silenceStart!==null){ S.silences.push({s:S.silenceStart, e:t}); S.silenceStart=null; $('#warn').classList.remove('show'); }
+      S.lastVoice = t;
+      if(Math.random() < Math.min(0.12, 0.02 + S.viewers/8000)) heart();
+    }else if(t - S.lastVoice > 4 && S.silenceStart===null){
+      S.silenceStart = S.lastVoice; $('#warn').classList.add('show');
+    }
+  }
+  requestAnimationFrame(meterTick);
+}
+
+/* ---------- 留言、禮物、愛心 ---------- */
+function addMsg(container, m){
+  const el = document.createElement('div');
+  el.className = 'msg' + ({q:' q', sys:' sys', gift:' gf'}[m.kind]||'');
+  const n = document.createElement('span'); n.className='n'; n.textContent = m.name;
+  el.appendChild(n); el.appendChild(document.createTextNode(m.text));
+  container.appendChild(el);
+  while(container.children.length > 9) container.firstChild.remove();
+}
+function pin(text){ const p=$('#pinned'); p.querySelector('span').textContent=text; p.classList.remove('show'); void p.offsetWidth; p.classList.add('show'); clearTimeout(pin.h); pin.h=setTimeout(()=>p.classList.remove('show'),12000); }
+function showGift(m){
+  const g = $('#gift'); g.innerHTML='';
+  const a = document.createElement('div'); a.className='av'; avatar(a, m.name);
+  const t = document.createElement('div'); t.className='gt';
+  const b = document.createElement('b'); b.textContent = m.name; const s = document.createElement('span'); s.textContent = '送出 '+m.gift;
+  t.append(b, s);
+  const e = document.createElement('span'); e.className='ge'; e.textContent = m.icon;
+  const x = document.createElement('span'); x.className='gx'; x.textContent = '×'+m.count;
+  g.append(a, t, e, x);
+  g.classList.remove('show'); void g.offsetWidth; g.classList.add('show');
+  clearTimeout(showGift.h); showGift.h = setTimeout(()=>g.classList.remove('show'), 3000);
+}
+function heart(){
+  if(S.live){ S.likes += 1 + Math.floor(Math.random()*Math.max(1, S.viewers/60)); setLikesUI(S.likes); }
+  const h = document.createElement('span'); h.className='heart';
+  h.textContent = rnd(['❤️','💗','💜','💛','🩷','👍']);
+  h.style.left = (Math.random()*26)+'px'; h.style.setProperty('--dx', (Math.random()*40-20)+'px');
+  $('#hearts').appendChild(h); setTimeout(()=>h.remove(), 2700);
+}
+function emit(kind, text, extra){
+  const m = Object.assign({t:now(), type:'comment', kind, name: rnd(NAMES), text}, extra||{});
+  S.events.push(m); addMsg($('#chat'), m);
+  if(kind==='q'){ pin(m.name+'：'+text); S.questionsShown++; }
+  if(kind==='gift'){ showGift(m); for(let i=0;i<5;i++) setTimeout(heart, i*110); }
+  if(kind==='sys' && Math.random()<0.5) renderAvatars([m.name].concat(S.recent||[]).slice(0,3)), S.recent=[m.name].concat(S.recent||[]).slice(0,3);
+}
+function customQs(){ return $('#customQ').value.split('\n').map(s=>s.trim()).filter(Boolean); }
+function nextDelay(){
+  const v = Math.max(1, S.viewers);
+  const base = Math.min(8000, Math.max(380, 6000/Math.sqrt(v/8)));
+  return base * (+$('#pace').value) * (0.5 + Math.random());
+}
+function chatStep(){
+  if(!S.live) return;
+  const sc = SCENES[S.scene], t = now(), silentFor = t - S.lastVoice, r = Math.random();
+  const v = S.viewers;
+  if(silentFor > 6 && r < 0.45) emit('c', rnd(LEAVE));
+  else if(t < 20 && r < 0.55) emit('c', rnd(sc.open.concat(['主播好～','來了來了'])));
+  else if(r < 0.12 + Math.min(0.08, v/20000)) emit('sys', '加入了直播間');
+  else if(r < 0.30){ emit('q', rnd(sc.questions.concat(customQs()))); }
+  else if(r < 0.33 + Math.min(0.07, v/15000)){ const g = rnd(GIFTS); const c = 1+Math.floor(Math.random()*(v>500?20:5)); emit('gift', `送出 ${g[0]} ×${c}`, {gift:g[0], icon:g[1], count:c}); }
+  else if(r < 0.36){ S.follows++; emit('sys', '追蹤了主播'); }
+  else emit('c', rnd(Math.random()<0.5 ? sc.general : COMMON));
+  S.chatTimer = setTimeout(chatStep, nextDelay());
+}
+function tick(){
+  const t = now(), N = S.targetViewers;
+  const target = Math.max(1, +$('#target').value||5)*60;
+  $('#pTime').textContent = fmt(t);
+  $('#barFill').style.width = Math.min(100, t/target*100)+'%';
+  const ramp = Math.min(1, 0.15 + t/30);
+  if($('#vMode').value==='fixed'){
+    S.viewers = N*ramp*(1 + (Math.random()-0.5)*0.04);
+  }else{
+    const silentFor = t - S.lastVoice;
+    const goal = silentFor > 4 ? Math.max(0.35, 1 - (silentFor-4)*0.07) : 1.1;
+    S.perf += (goal - S.perf)*0.1;
+    S.viewers = N*ramp*S.perf*(1 + (Math.random()-0.5)*0.05);
+  }
+  S.viewers = Math.max(1, S.viewers);
+  const v = Math.round(S.viewers);
+  S.peak = Math.max(S.peak, v);
+  S.series.push(v); S.likesSeries.push(S.likes);
+  setViewersUI(v);
+  if(Math.abs(t - target) < 0.6) toast('已達目標時長，可以準備收尾了');
+}
+
+/* ---------- 語音辨識 ---------- */
+function startSpeech(){
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition, note = $('#speechNote');
+  if($('#optSpeechSel').value!=='on') return;
+  if(!SR){ note.textContent='這個瀏覽器不支援即時字幕，贅字與逐字稿功能會關閉（iPhone 請用 Safari，Android 請用 Chrome）。'; note.classList.remove('hidden'); return; }
+  try{
+    const rec = new SR(); rec.lang='zh-TW'; rec.continuous=true; rec.interimResults=true;
+    rec.onresult = ev => { let interim=''; for(let i=ev.resultIndex;i<ev.results.length;i++){ const r=ev.results[i]; if(r.isFinal) onFinal(r[0].transcript.trim()); else interim+=r[0].transcript; } showSub(interim); };
+    rec.onerror = e => { if(e.error==='not-allowed'||e.error==='service-not-allowed'){ S.recOn=false; note.textContent='即時字幕在這個環境被封鎖，錄影照常進行。'; note.classList.remove('hidden'); } };
+    rec.onend = () => { if(S.live && S.recOn){ try{ rec.start(); }catch(_){} } };
+    S.rec = rec; S.recOn = true; rec.start();
+  }catch(e){ note.textContent='即時字幕無法啟動。'; note.classList.remove('hidden'); }
+}
+function showSub(text){ const sub=$('#sub'); sub.innerHTML=''; if(text){ const s=document.createElement('span'); s.textContent=text.slice(-26); sub.appendChild(s); } }
+function onFinal(text){
+  if(!text) return;
+  const t = now(); S.transcript.push({t, text});
+  showSub(text); clearTimeout(onFinal.h); onFinal.h = setTimeout(()=>showSub(''), 2500);
+  FILLERS.forEach(f => { const c = text.split(f).length-1; if(c) S.fillers[f]=(S.fillers[f]||0)+c; });
+  for(const [re, replies] of SCENES[S.scene].keys){ if(re.test(text)){ setTimeout(()=>{ if(S.live) emit(Math.random()<0.6?'q':'c', rnd(replies)); }, 1200+Math.random()*2000); break; } }
+  if(/大家好|哈囉|歡迎/.test(text)) setTimeout(()=>{ if(S.live) emit('c', rnd(['主播好～','嗨嗨','來了！'])); }, 900);
+  if(/按讚|愛心|點讚/.test(text)) for(let i=0;i<10;i++) setTimeout(heart, i*130);
+  if(/追蹤|關注/.test(text)) setTimeout(()=>{ if(S.live){ S.follows++; emit('sys','追蹤了主播'); } }, 1500);
+}
+
+/* ---------- 開播／結束 ---------- */
+function pickMime(){
+  for(const m of ['video/mp4;codecs=avc1.42E01E,mp4a.40.2','video/mp4','video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'])
+    if(window.MediaRecorder && MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(m)) return m;
+  return '';
+}
+async function startLive(){
+  if(!S.stream) return;
+  if(!window.MediaRecorder){ toast('這個瀏覽器不支援錄影'); return; }
+  S.scene = $('#scene').value; S.targetViewers = targetViewers();
+  setHost(); $('#ovTitle').textContent = $('#title').value;
+  $('#btnStart').disabled = true;
+  document.body.classList.add('living');
+  try{ if(MOBILE && document.documentElement.requestFullscreen) await document.documentElement.requestFullscreen(); }catch(e){}
+  const cd = $('#cd'); cd.classList.add('show');
+  for(let i=3;i>0;i--){ cd.textContent=i; await new Promise(r=>setTimeout(r,1000)); }
+  cd.classList.remove('show');
+  Object.assign(S, {viewers:1, perf:1, peak:0, likes:0, follows:0, series:[], likesSeries:[], events:[], transcript:[], fillers:{}, silences:[], marks:[], silenceStart:null, questionsShown:0, chunks:[], recent:[]});
+  $('#chat').innerHTML=''; setLikesUI(0); setViewersUI(1); renderAvatars(NAMES.slice().sort(()=>Math.random()-0.5).slice(0,3));
+  S.mime = pickMime(); S.ext = S.mime.includes('mp4') ? 'mp4' : 'webm';
+  try{ S.recorder = new MediaRecorder(S.stream, S.mime ? {mimeType:S.mime, videoBitsPerSecond:2500000} : undefined); }
+  catch(e){ S.recorder = new MediaRecorder(S.stream); S.ext='webm'; }
+  S.recorder.ondataavailable = e => { if(e.data && e.data.size) S.chunks.push(e.data); };
+  S.recorder.onstop = finishSession;
+  S.recorder.start(1000);
+  S.t0 = performance.now(); S.lastVoice = 0; S.live = true; keepAwake(true);
+  if(S.audioCtx && S.audioCtx.state==='suspended') S.audioCtx.resume();
+  $('#pLive').classList.remove('hidden');
+  S.timer = setInterval(tick, 1000);
+  emit('sys', '直播開始，歡迎大家', {name:'📢 系統'});
+  S.chatTimer = setTimeout(chatStep, 1200);
+  startSpeech();
+}
+function endLive(){
+  if(!S.live) return;
+  const t = now();
+  if(S.silenceStart!==null){ S.silences.push({s:S.silenceStart, e:t}); S.silenceStart=null; }
+  S.duration = t; S.live = false; S.recOn = false; keepAwake(false);
+  try{ S.rec && S.rec.stop(); }catch(e){}
+  clearInterval(S.timer); clearTimeout(S.chatTimer);
+  $('#warn').classList.remove('show'); $('#pLive').classList.add('hidden'); $('#confirm').classList.remove('show'); showSub('');
+  document.body.classList.remove('living');
+  try{ if(document.fullscreenElement) document.exitFullscreen(); }catch(e){}
+  S.recorder.stop();
+}
+function mark(){ if(!S.live) return; const t=now(); S.marks.push(t); toast('已標記 '+fmt(t)); }
+async function finishSession(){
+  const blob = new Blob(S.chunks, {type: S.mime || 'video/webm'});
+  const d = new Date();
+  const sess = { id:'r'+d.getTime(), host: $('#host').value.trim()||'主播', title: $('#title').value||'未命名直播',
+    scene:S.scene, sceneName: $('#scene').selectedOptions[0].textContent, created:d.toISOString(), duration:S.duration, ext:S.ext,
+    targetViewers:S.targetViewers, peak:S.peak, avg: (()=>{ const a = S.series.length>45 ? S.series.slice(30) : S.series; return a.length ? Math.round(a.reduce((x,y)=>x+y,0)/a.length) : 0; })(),
+    likes:S.likes, follows:S.follows, series:S.series.slice(), likesSeries:S.likesSeries.slice(), events:S.events.slice(), transcript:S.transcript.slice(),
+    fillers:Object.assign({},S.fillers), silences:S.silences.slice(), marks:S.marks.slice(), questions:S.questionsShown, blob };
+  sessions.unshift(sess); await idbPut(sess);
+  $('#btnStart').disabled = false;
+  renderSessions(); showTab('review'); openSession(sess.id);
+  toast('錄影已存好，開始回放吧');
+}
+
+/* ---------- 儲存（只存在這台裝置的瀏覽器） ---------- */
+let sessions = [], dbh = null;
+function idbOpen(){ return new Promise(res=>{ try{ const r=indexedDB.open('live-practice-room',1); r.onupgradeneeded=()=>r.result.createObjectStore('s',{keyPath:'id'}); r.onsuccess=()=>res(r.result); r.onerror=()=>res(null); }catch(e){ res(null); } }); }
+function idbTx(fn){ return new Promise(ok=>{ try{ if(!dbh) return ok(); const tx=dbh.transaction('s','readwrite'); fn(tx.objectStore('s')); tx.oncomplete=ok; tx.onerror=ok; }catch(e){ ok(); } }); }
+const idbPut = s => idbTx(st=>st.put(s));
+const idbDel = id => idbTx(st=>st.delete(id));
+function idbAll(){ return new Promise(ok=>{ try{ if(!dbh) return ok([]); const r=dbh.transaction('s').objectStore('s').getAll(); r.onsuccess=()=>ok(r.result||[]); r.onerror=()=>ok([]); }catch(e){ ok([]); } }); }
+
+/* ---------- 回放 ---------- */
+let cur = null, rafOn = false, lastKey = '', lastGift = null;
+function renderSessions(){
+  const box=$('#sessions'); box.innerHTML='';
+  $('#noSess').classList.toggle('hidden', sessions.length>0);
+  sessions.forEach(s=>{
+    const b=document.createElement('button'); b.className='sess';
+    b.setAttribute('aria-current', cur && cur.id===s.id ? 'true':'false');
+    const d=new Date(s.created);
+    b.innerHTML='<div><div class="t"></div><div class="m"></div></div><div class="m"></div>';
+    b.querySelector('.t').textContent = s.title;
+    b.querySelectorAll('.m')[0].textContent = `${s.host||''}　${s.sceneName}　${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+    b.querySelectorAll('.m')[1].textContent = fmt(s.duration);
+    b.onclick = () => openSession(s.id);
+    box.appendChild(b);
+  });
+}
+function sessStats(s){
+  const silTotal = s.silences.reduce((a,x)=>a+(x.e-x.s),0);
+  const fillTotal = Object.values(s.fillers).reduce((a,b)=>a+b,0);
+  const chars = s.transcript.reduce((a,l)=>a+l.text.replace(/\s/g,'').length,0);
+  const speakMin = Math.max(0.1,(s.duration-silTotal)/60);
+  const retain = s.targetViewers ? Math.round(s.avg/s.targetViewers*100) : null;
+  return {silTotal, fillTotal, rate: chars ? Math.round(chars/speakMin) : null, retain};
+}
+function openSession(id){
+  cur = sessions.find(s=>s.id===id); if(!cur) return;
+  renderSessions();
+  $('#detail').classList.remove('hidden');
+  $('#dTitle').textContent = cur.title;
+  const p = $('#player');
+  if(p.dataset.url) URL.revokeObjectURL(p.dataset.url);
+  const url = URL.createObjectURL(cur.blob); p.dataset.url=url; p.src=url;
+  p.onloadedmetadata = () => { if(p.duration===Infinity||isNaN(p.duration)){ p.currentTime=1e101; p.ontimeupdate=()=>{ p.ontimeupdate=null; p.currentTime=0; }; } };
+  p.playbackRate = +$('#rate').value;
+  showPlayer(true);
+  $('#ovTitle').textContent = cur.title; $('#hostName').textContent = cur.host||'主播'; avatar($('#hostAv'), cur.host||'主播');
+  renderAvatars(cur.events.filter(e=>e.kind==='sys' && e.name && !e.name.startsWith('📢')).slice(-3).map(e=>e.name).concat(NAMES).slice(0,3));
+  const st = sessStats(cur);
+  const stats = [['時長',fmt(cur.duration)],['設定人數',cur.targetViewers?fmtN(cur.targetViewers):'—'],['最高觀看',fmtN(cur.peak)],['觀眾留存', st.retain!==null?st.retain+'%':'—', st.retain!==null && st.retain<70],
+    ['冷場次數',cur.silences.length,cur.silences.length>2],['冷場總秒數',Math.round(st.silTotal)+'s',st.silTotal>20],['贅字',st.fillTotal,st.fillTotal>10],['語速（字/分）',st.rate??'—']];
+  $('#dStats').innerHTML = stats.map(([k,v,bad])=>`<div class="stat${bad?' bad':''}"><div class="v">${v}</div><div class="k">${k}</div></div>`).join('');
+  const fl = Object.entries(cur.fillers).sort((a,b)=>b[1]-a[1]);
+  $('#dFillers').innerHTML = fl.length ? fl.map(([f,c])=>`<span class="chip">「${f}」 ${c} 次</span>`).join('') : `<span class="hint" style="margin:0">${cur.transcript.length?'沒有偵測到贅字，很乾淨。':'這場沒有逐字稿（字幕功能未啟用或不支援）。'}</span>`;
+  const tr=$('#dTrans'); tr.innerHTML='';
+  const fre = new RegExp('('+FILLERS.join('|')+')','g');
+  cur.transcript.forEach(l=>{
+    const b=document.createElement('button'); b.className='line';
+    const tm=document.createElement('time'); tm.textContent=fmt(l.t);
+    const sp=document.createElement('span');
+    l.text.split(fre).forEach(part=>{ if(FILLERS.includes(part)){ const m=document.createElement('mark'); m.textContent=part; sp.appendChild(m);} else sp.appendChild(document.createTextNode(part)); });
+    b.append(tm, sp); b.onclick=()=>seek(l.t); tr.appendChild(b);
+  });
+  if(!cur.transcript.length) tr.innerHTML='<p class="hint" style="margin:0">沒有逐字稿。</p>';
+  const tl=$('#timeline'); tl.innerHTML=''; const D=cur.duration||1;
+  cur.silences.forEach(s=>{ const e=document.createElement('div'); e.className='seg'; e.style.left=(s.s/D*100)+'%'; e.style.width=Math.max(0.6,(s.e-s.s)/D*100)+'%'; tl.appendChild(e); });
+  cur.events.filter(e=>e.kind==='q').forEach(q=>{ const e=document.createElement('div'); e.className='qd'; e.style.left=(q.t/D*100)+'%'; tl.appendChild(e); });
+  cur.marks.forEach(m=>{ const e=document.createElement('div'); e.className='mk'; e.style.left=(m/D*100)+'%'; e.title='標記 '+fmt(m); tl.appendChild(e); });
+  const ph=document.createElement('div'); ph.className='ph'; ph.id='ph'; tl.appendChild(ph);
+  drawSpark();
+  $('#coach').classList.add('hidden'); $('#coach').textContent='';
+  lastKey=''; lastGift=null; renderOverlayAt(0, true);
+  if(!rafOn){ rafOn=true; requestAnimationFrame(replayLoop); }
+}
+function seek(t){ const p=$('#player'); p.currentTime=Math.max(0,t-1); renderOverlayAt(p.currentTime,true); }
+function drawSpark(){
+  const c=$('#spark'), dpr=window.devicePixelRatio||1, w=c.clientWidth||400, h=70;
+  c.width=w*dpr; c.height=h*dpr; const g=c.getContext('2d'); g.scale(dpr,dpr); g.clearRect(0,0,w,h);
+  const s=cur.series; if(s.length<2) return;
+  const max=Math.max(...s, cur.targetViewers||1), cs=getComputedStyle(document.documentElement), D=cur.duration||1;
+  g.fillStyle=cs.getPropertyValue('--warn').trim()+'33';
+  cur.silences.forEach(x=>g.fillRect(x.s/D*w,0,(x.e-x.s)/D*w,h));
+  if(cur.targetViewers){ const y=h-4-(cur.targetViewers/max)*(h-10); g.setLineDash([4,4]); g.strokeStyle=cs.getPropertyValue('--muted').trim(); g.lineWidth=1; g.beginPath(); g.moveTo(0,y); g.lineTo(w,y); g.stroke(); g.setLineDash([]); }
+  g.beginPath(); s.forEach((v,i)=>{ const x=i/(s.length-1)*w, y=h-4-(v/max)*(h-10); i?g.lineTo(x,y):g.moveTo(x,y); });
+  g.strokeStyle=cs.getPropertyValue('--accent').trim(); g.lineWidth=2; g.stroke();
+}
+function renderOverlayAt(t, force){
+  if(!cur) return;
+  const show = $('#optReplayOv').checked;
+  ['#chat','#hearts','#gift','#pinned'].forEach(s=>$(s).classList.toggle('hidden',!show));
+  const comments = cur.events.filter(e=>e.type==='comment' && e.t<=t && t-e.t<30).slice(-9);
+  const key = comments.length ? comments[comments.length-1].t+'|'+comments.length : 'none';
+  if(force || key!==lastKey){
+    lastKey=key; const box=$('#chat'); box.innerHTML=''; comments.forEach(m=>addMsg(box,m));
+    const q = cur.events.filter(e=>e.kind==='q' && e.t<=t && t-e.t<12).pop(), p=$('#pinned');
+    if(q){ p.querySelector('span').textContent=q.name+'：'+q.text; p.classList.add('show'); } else p.classList.remove('show');
+    const g = cur.events.filter(e=>e.kind==='gift' && e.t<=t && t-e.t<3).pop();
+    if(g && g!==lastGift){ lastGift=g; if(g.icon) showGift(g); }
+    if(!g){ $('#gift').classList.remove('show'); lastGift=null; }
+  }
+  const i = Math.min(cur.series.length-1, Math.floor(t));
+  setViewersUI(cur.series[i]||0); setLikesUI((cur.likesSeries||[])[i]||0);
+  $('#pTime').textContent = fmt(t);
+  $('#warn').classList.toggle('show', show && cur.silences.some(s=>t>=s.s+4 && t<=s.e));
+  const line = cur.transcript.filter(l=>l.t<=t && t-l.t<3).pop();
+  showSub(show && line ? line.text : '');
+  $('#barFill').style.width = (t/(cur.duration||1)*100)+'%';
+  const ph=$('#ph'); if(ph) ph.style.left=(t/(cur.duration||1)*100)+'%';
+}
+function replayLoop(){ const p=$('#player'); if(cur && !p.classList.contains('hidden')) renderOverlayAt(p.currentTime); requestAnimationFrame(replayLoop); }
+function showPlayer(on){
+  $('#player').classList.toggle('hidden', !on);
+  $('#cam').classList.toggle('hidden', on);
+  $('#empty').classList.toggle('hidden', on || !!S.stream);
+  if(!on){
+    $('#player').pause(); $('#chat').innerHTML=''; ['#pinned','#warn','#gift'].forEach(s=>$(s).classList.remove('show'));
+    ['#chat','#hearts','#gift','#pinned'].forEach(s=>$(s).classList.remove('hidden'));
+    showSub(''); $('#pTime').textContent='00:00'; setViewersUI(0); setLikesUI(0); $('#barFill').style.width='0';
+    $('#ovTitle').textContent=$('#title').value; setHost(); renderAvatars([]);
+  }
+}
+
+/* ---------- AI 教練 ---------- */
+let sampleFn=null, coachCtl=null;
+async function coach(){
+  if(!cur || !sampleFn) return;
+  const box=$('#coach'); box.classList.remove('hidden'); box.textContent='分析中…';
+  $('#btnCoach').disabled=true; $('#btnStop').classList.remove('hidden');
+  coachCtl = new AbortController();
+  const st = sessStats(cur);
+  const tr = cur.transcript.map(l=>`[${fmt(l.t)}] ${l.text}`).join('\n') || '（無逐字稿）';
+  const qs = cur.events.filter(e=>e.kind==='q').map(e=>`[${fmt(e.t)}] ${e.text}`).join('\n') || '（無）';
+  const prompt = `你是專業的直播主持教練，請用繁體中文、條理清楚地給這位練習者回饋。
+情境：${cur.sceneName}；直播標題：${cur.title}；主播：${cur.host}
+數據：時長 ${fmt(cur.duration)}，設定觀看人數 ${cur.targetViewers}，最高觀看 ${cur.peak}，平均觀看 ${cur.avg}（留存 ${st.retain}%），冷場 ${cur.silences.length} 次（共 ${Math.round(st.silTotal)} 秒，時間點：${cur.silences.map(s=>fmt(s.s)).join('、')||'無'}），贅字統計：${JSON.stringify(cur.fillers)}，語速每分鐘 ${st.rate??'未知'} 字。
+直播中觀眾的提問（模擬）：
+${qs}
+練習者逐字稿（語音辨識，可能有錯字）：
+${tr}
+
+請輸出：
+1. 一句話總評
+2. 做得好的 2–3 點（引用逐字稿時間點）
+3. 最需要改進的 3 點，每點附「下次可以這樣說」的示範句
+4. 哪些觀眾提問被忽略了、該怎麼接
+5. 下一次練習的單一重點目標
+不要使用 Markdown 粗體符號，保持精簡。`;
+  try{ await sampleFn(prompt, {signal:coachCtl.signal, cache:false, onText:({text})=>{ box.textContent=text; }}); cur.coach = box.textContent; idbPut(cur); }
+  catch(e){
+    const map={not_granted:'沒有取得使用 Claude 的許可，AI 教練功能已關閉。', rate_limited:'請求太頻繁，請稍後再試。', aborted:'已停止。'};
+    box.textContent = (e && e.text ? e.text+'\n\n（' : '') + (map[e && e.code] || ('無法取得回饋（'+(e && e.code || '錯誤')+'）')) + (e && e.text ? '）' : '');
+    if(e && e.code==='not_granted') $('#btnCoach').classList.add('hidden');
+  }finally{ $('#btnCoach').disabled=false; $('#btnStop').classList.add('hidden'); }
+}
+
+/* ---------- 下載與成績單 ---------- */
+let dl=null;
+async function saveFile(filename, data, type){
+  if(dl){ try{ await dl.save({filename, data}); toast('已下載'); return; } catch(e){ if(e && (e.code==='declined')) return; if(e && e.code==='rate_limited'){ toast('請稍候再試'); return; } } }
+  const blob = data instanceof Blob ? data : new Blob([data], {type: type||'text/plain'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=filename; document.body.appendChild(a); a.click();
+  setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },1000);
+}
+function stamp(s){ const d=new Date(s.created); return `${d.getMonth()+1}${String(d.getDate()).padStart(2,'0')}_${String(d.getHours()).padStart(2,'0')}${String(d.getMinutes()).padStart(2,'0')}`; }
+function report(s){
+  const st = sessStats(s), d = new Date(s.created);
+  const L = [];
+  L.push(`# 直播練習成績單`,``,`- 主播：${s.host}`,`- 標題：${s.title}`,`- 情境：${s.sceneName}`,`- 日期：${d.toLocaleString('zh-TW')}`,``,`## 數據`,
+    `- 時長：${fmt(s.duration)}`,`- 設定觀看人數：${s.targetViewers||'—'}`,`- 最高觀看：${s.peak}　平均觀看：${s.avg}　留存：${st.retain??'—'}%`,
+    `- 按讚：${s.likes}　新追蹤：${s.follows||0}`,`- 冷場：${s.silences.length} 次，共 ${Math.round(st.silTotal)} 秒`,
+    `- 贅字：${st.fillTotal} 次 ${Object.entries(s.fillers).map(([f,c])=>`（${f} ${c}）`).join('')}`,`- 語速：${st.rate??'—'} 字/分`,
+    `- 標記時間點：${s.marks.map(fmt).join('、')||'無'}`,``,`## 觀眾提問`, ...(s.events.filter(e=>e.kind==='q').map(e=>`- [${fmt(e.t)}] ${e.text}`)), ``,
+    `## 逐字稿`, ...(s.transcript.length ? s.transcript.map(l=>`[${fmt(l.t)}] ${l.text}`) : ['（無）']));
+  if(s.coach) L.push(``,`## AI 教練回饋`, s.coach);
+  return L.join('\n');
+}
+
+/* ---------- 分頁 ---------- */
+function showTab(which){
+  const st = which==='studio';
+  $('#tabStudio').setAttribute('aria-selected', st); $('#tabReview').setAttribute('aria-selected', !st);
+  $('#studio').classList.toggle('hidden', !st); $('#review').classList.toggle('hidden', st);
+  showPlayer(!st && !!cur);
+  if(!st && cur) openSession(cur.id);
+}
+
+/* ---------- 綁定 ---------- */
+$('#btnCam').onclick = openCam;
+$('#selCam').onchange = openCam; $('#selMic').onchange = openCam;
+$('#optMirror').onchange = e => $('#cam').classList.toggle('mirror', e.target.checked);
+$('#btnStart').onclick = startLive;
+$('#btnX').onclick = () => $('#confirm').classList.add('show');
+$('#cKeep').onclick = () => $('#confirm').classList.remove('show');
+$('#cEnd').onclick = endLive;
+$('#btnMark2').onclick = mark;
+$('#btnHeart').onclick = () => { for(let i=0;i<3;i++) setTimeout(heart,i*90); };
+$('#host').oninput = setHost;
+$('#title').oninput = e => { if(!cur || $('#player').classList.contains('hidden')) $('#ovTitle').textContent = e.target.value; };
+$('#vSel').onchange = e => $('#vCustomBox').classList.toggle('hidden', e.target.value!=='custom');
+document.addEventListener('keydown', e => {
+  if(!S.live) return;
+  if((e.key==='m'||e.key==='M') && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) mark();
+  if(e.key==='Escape') $('#confirm').classList.toggle('show');
+});
+document.addEventListener('visibilitychange', () => { if(document.hidden && S.live){ endLive(); toast('離開畫面，直播已自動結束並保存錄影'); } });
+$('#tabStudio').onclick = () => showTab('studio');
+$('#tabReview').onclick = () => showTab('review');
+$('#btnPlay').onclick = () => { const p=$('#player'); p.paused ? p.play() : p.pause(); };
+$('#player').onplay = () => $('#btnPlay').textContent='暫停';
+$('#player').onpause = () => $('#btnPlay').textContent='播放';
+$('#player').onclick = () => $('#btnPlay').click();
+$('#rate').onchange = e => $('#player').playbackRate = +e.target.value;
+$('#optReplayOv').onchange = () => renderOverlayAt($('#player').currentTime, true);
+$('#timeline').onclick = e => { if(!cur) return; const r=e.currentTarget.getBoundingClientRect(); seek((e.clientX-r.left)/r.width*cur.duration+1); };
+$('#btnCoach').onclick = coach;
+$('#btnStop').onclick = () => coachCtl && coachCtl.abort();
+$('#btnDl').onclick = () => { if(cur) saveFile(`直播練習_${cur.host}_${stamp(cur)}.${cur.ext}`, cur.blob); };
+$('#btnReport').onclick = () => { if(cur) saveFile(`直播成績單_${cur.host}_${stamp(cur)}.md`, report(cur), 'text/markdown'); };
+$('#btnDel').onclick = async () => {
+  const b=$('#btnDel');
+  if(!cur) return;
+  if(!b.dataset.armed){ b.dataset.armed='1'; b.textContent='再按一次確認刪除'; setTimeout(()=>{ delete b.dataset.armed; b.textContent='刪除這場'; }, 3000); return; }
+  delete b.dataset.armed; b.textContent='刪除這場';
+  await idbDel(cur.id); sessions=sessions.filter(s=>s.id!==cur.id); cur=null;
+  $('#detail').classList.add('hidden'); showPlayer(false); renderSessions(); toast('已刪除');
+};
+$('#btnOffline').onclick = () => saveFile('直播練習室.html', SOURCE, 'text/html');
+window.addEventListener('resize', () => { if(cur) drawSpark(); });
+
+/* ---------- 啟動 ---------- */
+(async () => {
+  setHost(); $('#ovTitle').textContent = $('#title').value;
+  dbh = await idbOpen();
+  sessions = (await idbAll()).map(s=>Object.assign({host:'主播', likesSeries:[], follows:0}, s)).sort((a,b)=>b.created.localeCompare(a.created));
+  renderSessions();
+  if(window.claude && claude.use){
+    claude.use('sample').then(f=>{ sampleFn=f; if(!f) $('#btnCoach').classList.add('hidden'); }).catch(()=>$('#btnCoach').classList.add('hidden'));
+    claude.use('downloads').then(d=>{ dl=d; }).catch(()=>{});
+  }else{ $('#btnCoach').classList.add('hidden'); }
+})();
+</script>
+</body>
+</html>
