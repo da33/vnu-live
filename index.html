@@ -943,7 +943,7 @@ function renderScore(s){
 }
 function openSession(id){
   cur = sessions.find(s=>s.id===id); if(!cur) return;
-  renderSessions();
+  renderSessions(); dlLabel();
   $('#detail').classList.remove('hidden');
   $('#dTitle').textContent = cur.title;
   renderScore(cur);
@@ -1087,6 +1087,69 @@ async function saveFile(filename, data, type){
   // Safari 會先問「要下載嗎？」，網址太早釋放會變成「無法下載檔案」
   setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },120000);
 }
+
+/* ---------- 下載錄影：轉成剪輯軟體好讀的標準 MP4 ---------- */
+// 瀏覽器錄的是分段式 MP4（iPhone 影格率不固定、Baseline），手機剪映會卡。
+// 下載時用 WebCodecs（硬體編碼）重新編成：標準 MP4、moov 在前、H.264 High、固定 30fps、每秒一張關鍵影格；聲音 AAC 直接沿用。
+// 轉不了（舊瀏覽器、沒網路載不到轉檔程式）就退回原始錄影。
+const MB_SRC = ['https://cdn.jsdelivr.net/npm/mediabunny@1.62.1/dist/bundles/mediabunny.min.mjs',
+                'https://unpkg.com/mediabunny@1.62.1/dist/bundles/mediabunny.min.mjs'];
+let mbP = null;
+function loadMB(){
+  if(!mbP){ mbP = (async () => { let err; for(const u of MB_SRC){ try{ return await import(u); }catch(e){ err = e; } } throw err; })(); mbP.catch(()=>{ mbP = null; }); }
+  return mbP;
+}
+async function toEditMp4(blob, onProg){
+  if(typeof VideoEncoder==='undefined' || typeof VideoDecoder==='undefined') throw new Error('沒有 WebCodecs');
+  const MB = await loadMB();
+  const input = new MB.Input({source:new MB.BlobSource(blob), formats:MB.ALL_FORMATS});
+  const vt = await input.getPrimaryVideoTrack(), at = await input.getPrimaryAudioTrack();
+  if(!vt) throw new Error('沒有影像軌');
+  const w = await vt.getDisplayWidth(), h = await vt.getDisplayHeight();
+  const k = (w>0 && h>0) ? Math.min(1, 1080/Math.min(w,h), 1920/Math.max(w,h)) : 1; // 最大 1080×1920
+  const W = Math.round(w*k/2)*2, H = Math.round(h*k/2)*2, px = W*H;
+  const output = new MB.Output({format:new MB.Mp4OutputFormat({fastStart:'in-memory'}), target:new MB.BufferTarget()});
+  const conv = await MB.Conversion.init({input, output, tracks:'primary', showWarnings:false,
+    video:Object.assign({codec:'avc', frameRate:30, keyFrameInterval:1, forceTranscode:true, bitrate: px>1.5e6 ? 8e6 : px>0.6e6 ? 6e6 : 4e6},
+      (W!==w || H!==h) ? {width:W, height:H, fit:'contain'} : {}),
+    audio:{codec:'aac'}});
+  const lost = conv.discardedTracks.map(d=>d.track.type+':'+d.reason);
+  if(!conv.isValid || lost.some(x=>x.startsWith('video')) || (at && lost.some(x=>x.startsWith('audio')))) throw new Error('無法轉檔 '+lost.join(','));
+  let last = performance.now(), timer = 0;
+  conv.onProgress = p => { last = performance.now(); onProg && onProg(p); };
+  const run = conv.execute(); run.catch(()=>{});
+  // 卡住 30 秒沒進度就放棄，改給原始錄影
+  const stall = new Promise((_, rej) => { timer = setInterval(() => { if(performance.now()-last > 30000){ conv.cancel().catch(()=>{}); rej(new Error('轉檔停住了')); } }, 2000); });
+  try{ await Promise.race([run, stall]); } finally{ clearInterval(timer); }
+  return new Blob([output.target.buffer], {type:'video/mp4'});
+}
+const FIXED = new Map(); // 場次 id → 下載用檔案（只放記憶體，不另存、不動原始錄影）
+let converting = false;
+const dlLabel = () => { $('#btnDl').textContent = (cur && isIOS() && !dl && FIXED.has(cur.id)) ? '儲存影片' : '下載錄影'; };
+async function dlVideo(){
+  const s = cur; if(!s || converting) return;
+  const name = `直播練習_${s.host}_${stamp(s)}`, b = $('#btnDl');
+  let out = FIXED.get(s.id);
+  if(!out){
+    converting = true; b.disabled = true; b.textContent = '轉成剪輯檔…';
+    const t0 = performance.now();
+    try{
+      const blob = await toEditMp4(s.blob, p => { b.textContent = `轉成剪輯檔 ${Math.round(p*100)}%`; });
+      out = {blob, ext:'mp4', ok:true};
+      console.log(`[mux] 轉檔完成 ${((performance.now()-t0)/1000).toFixed(1)} 秒，${(s.blob.size/1e6).toFixed(1)}MB → ${(blob.size/1e6).toFixed(1)}MB`);
+    }catch(e){
+      console.warn('[mux] 轉檔失敗，改給原始錄影', e);
+      out = {blob:s.blob, ext:s.ext, ok:false};
+    }finally{ converting = false; b.disabled = false; }
+    FIXED.set(s.id, out);
+    if(cur!==s){ dlLabel(); return; }
+    // iPhone 的分享選單要由使用者的點擊叫出，轉檔後要再按一次
+    if(isIOS() && !dl){ dlLabel(); toast(out.ok ? '轉好了，再按一次「儲存影片」' : '無法轉成剪輯檔，按「儲存影片」存原始錄影'); return; }
+    if(!out.ok) toast('無法轉成剪輯檔，改下載原始錄影');
+  }
+  dlLabel();
+  await saveFile(`${name}.${out.ext}`, out.blob);
+}
 function stamp(s){ const d=new Date(s.created); return `${d.getMonth()+1}${String(d.getDate()).padStart(2,'0')}_${String(d.getHours()).padStart(2,'0')}${String(d.getMinutes()).padStart(2,'0')}`; }
 function report(s){
   const st = sessStats(s), d = new Date(s.created), sc = sessScore(s);
@@ -1143,14 +1206,14 @@ $('#optReplayOv').onchange = () => renderOverlayAt($('#player').currentTime, tru
 $('#timeline').onclick = e => { if(!cur) return; const r=e.currentTarget.getBoundingClientRect(); seek((e.clientX-r.left)/r.width*cur.duration+1); };
 $('#btnCoach').onclick = coach;
 $('#btnStop').onclick = () => coachCtl && coachCtl.abort();
-$('#btnDl').onclick = () => { if(cur) saveFile(`直播練習_${cur.host}_${stamp(cur)}.${cur.ext}`, cur.blob); };
+$('#btnDl').onclick = dlVideo;
 $('#btnReport').onclick = () => { if(cur) saveFile(`直播成績單_${cur.host}_${stamp(cur)}.md`, report(cur), 'text/markdown'); };
 $('#btnDel').onclick = async () => {
   const b=$('#btnDel');
   if(!cur) return;
   if(!b.dataset.armed){ b.dataset.armed='1'; b.textContent='再按一次確認刪除'; setTimeout(()=>{ delete b.dataset.armed; b.textContent='刪除這場'; }, 3000); return; }
   delete b.dataset.armed; b.textContent='刪除這場';
-  await idbDel(cur.id); sessions=sessions.filter(s=>s.id!==cur.id); cur=null;
+  await idbDel(cur.id); FIXED.delete(cur.id); sessions=sessions.filter(s=>s.id!==cur.id); cur=null;
   $('#detail').classList.add('hidden'); showPlayer(false); renderSessions(); toast('已刪除');
 };
 $('#btnOffline').onclick = () => saveFile('直播練習室.html', SOURCE, 'text/html');
